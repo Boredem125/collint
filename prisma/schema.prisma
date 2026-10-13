@@ -1,0 +1,167 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SourceType {
+  GOVERNMENT
+  UNIVERSITY_PORTAL
+  REGULATOR
+  INSTITUTION
+  PUBLIC_RECORD
+  INTERNAL
+}
+
+enum FactStatus {
+  VERIFIED
+  SELF_REPORTED
+  NEEDS_VALIDATION
+  UNAVAILABLE
+}
+
+// Stages are distinct legal positions and must never be merged or summed.
+enum LegalStage {
+  COMPLAINT
+  FIR
+  CHARGE
+  PROSECUTION
+  CONVICTION
+  ACQUITTAL
+  CIVIL_DISPUTE
+  REGULATORY_ACTION
+  INSOLVENCY
+}
+
+model Institution {
+  id              String   @id @default(cuid())
+  name            String
+  aisheCode       String   @unique
+  city            String
+  state           String
+  established     Int?
+  ownership       String
+  university      String
+  campusStatus    String   @default("Operational")
+  isSample        Boolean  @default(false)
+  // Manual judgement, never computed: GREEN | AMBER | RED
+  overallRisk     String?
+  overallRiskNote String?
+  // Manual judgement: HIGH | MEDIUM | LOW
+  opportunity     String?
+  opportunityNote String?
+  createdAt       DateTime @default(now())
+  importBatchId   String?
+  importBatch     ImportBatch? @relation(fields: [importBatchId], references: [id], onDelete: Cascade)
+
+  facts      Fact[]
+  programmes Programme[]
+  promoters  Promoter[]
+  legal      LegalRecord[]
+  recruiters Recruiter[]
+}
+
+model Programme {
+  id               String  @id @default(cuid())
+  institutionId    String
+  institution      Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  name             String
+  level            String  // UG | PG | Diploma | PhD
+  startedYear      Int?
+  discontinuedYear Int?
+  facts            Fact[]
+
+  @@unique([institutionId, name])
+}
+
+model Fact {
+  id            String     @id @default(cuid())
+  institutionId String
+  institution   Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  metricKey     String
+  // Academic year "2024-25", calendar year "2025", or "current" for point-in-time values
+  period        String     @default("current")
+  programmeId   String?
+  programme     Programme? @relation(fields: [programmeId], references: [id], onDelete: Cascade)
+  valueNum      Float?
+  valueText     String?
+  sourceType    SourceType
+  sourceName    String
+  sourceUrl     String?
+  asOfDate      DateTime
+  status        FactStatus
+  note          String?
+  importBatchId String?
+  importBatch   ImportBatch? @relation(fields: [importBatchId], references: [id], onDelete: Cascade)
+
+  @@index([institutionId, metricKey, period])
+}
+
+model Promoter {
+  id            String   @id @default(cuid())
+  institutionId String
+  institution   Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  name          String
+  kind          String   // PERSON | TRUST | SOCIETY | COMPANY
+  role          String
+  established   Int?
+  sourceName    String
+  sourceUrl     String?
+  asOfDate      DateTime
+  entities      PromoterEntity[]
+  legal         LegalRecord[]
+}
+
+model PromoterEntity {
+  id           String   @id @default(cuid())
+  promoterId   String
+  promoter     Promoter @relation(fields: [promoterId], references: [id], onDelete: Cascade)
+  name         String
+  kind         String   // INSTITUTION | BUSINESS
+  relationship String
+  sourceName   String
+  asOfDate     DateTime
+}
+
+model LegalRecord {
+  id            String     @id @default(cuid())
+  institutionId String
+  institution   Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  promoterId    String?
+  promoter      Promoter?  @relation(fields: [promoterId], references: [id], onDelete: SetNull)
+  stage         LegalStage
+  title         String
+  forum         String
+  year          Int
+  summary       String
+  currentStatus String
+  sourceName    String
+  sourceUrl     String?
+  asOfDate      DateTime
+}
+
+model Recruiter {
+  id            String     @id @default(cuid())
+  institutionId String
+  institution   Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  name          String
+  sector        String     // IT | BFSI | Core | Services | Other
+  years         Int[]
+  sourceType    SourceType
+  sourceName    String
+  asOfDate      DateTime
+  status        FactStatus
+}
+
+model ImportBatch {
+  id           String   @id @default(cuid())
+  filename     String
+  createdAt    DateTime @default(now())
+  accepted     Int
+  rejected     Int
+  institutions Institution[]
+  facts        Fact[]
+}

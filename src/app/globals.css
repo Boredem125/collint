@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #0f172a;
+  --color-muted: #64748b;
+  --color-line: #e2e8f0;
+  --color-surface: #ffffff;
+  --color-canvas: #f6f7f9;
+  --color-brand: #1e3a8a;
+  /* Evidence status */
+  --color-verified: #15803d;
+  --color-selfreported: #b45309;
+  --color-validate: #c2410c;
+  --color-unavailable: #94a3b8;
+  /* Risk bands */
+  --color-critical: #b91c1c;
+  --color-attention: #c2410c;
+  --font-sans: ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Trust lens: when on, numbers not backed by a VERIFIED fact fade. */
+[data-trust-lens="on"] [data-evidence]:not([data-evidence="VERIFIED"]) {
+  opacity: 0.28;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+  }
+}
