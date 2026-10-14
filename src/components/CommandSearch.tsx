@@ -213,7 +213,7 @@ export default function CommandSearch() {
 
   const palette = (
     <div
-      className="fixed inset-0 z-[100] flex items-start justify-center bg-ink/30 px-4 pt-[12vh]"
+      className="fixed inset-0 z-[100] flex items-start justify-center bg-ink/30 px-3 pt-3 sm:px-4 sm:pt-[12vh]"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) close();
       }}
@@ -222,7 +222,7 @@ export default function CommandSearch() {
         role="dialog"
         aria-modal="true"
         aria-label="Command palette"
-        className="flex max-h-[min(560px,76vh)] w-full max-w-[620px] flex-col overflow-hidden rounded-lg border border-line-strong bg-surface shadow-[0_24px_60px_-24px_rgb(0_0_0/0.5)]"
+        className="flex max-h-[min(560px,80dvh)] w-full max-w-[620px] flex-col overflow-hidden rounded-lg border border-line-strong bg-surface shadow-[0_24px_60px_-24px_rgb(0_0_0/0.5)]"
       >
         <div className="flex items-center gap-3 border-b border-line px-4">
           <SearchIcon className="shrink-0 text-faint" />

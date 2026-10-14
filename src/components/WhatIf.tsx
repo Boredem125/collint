@@ -21,6 +21,13 @@ const RANGE_CSS = `
 .wi-range:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 4px color-mix(in oklab,var(--brand) 30%,transparent)}
 .wi-range:focus-visible::-moz-range-thumb{box-shadow:0 0 0 4px color-mix(in oklab,var(--brand) 30%,transparent)}
 .wi-range:disabled{cursor:not-allowed;opacity:.4}
+@media (max-width:639px){
+.wi-range{height:40px}
+.wi-range::-webkit-slider-runnable-track{height:4px;border-radius:2px}
+.wi-range::-moz-range-track,.wi-range::-moz-range-progress{height:4px;border-radius:2px}
+.wi-range::-webkit-slider-thumb{width:26px;height:26px;margin-top:-11px}
+.wi-range::-moz-range-thumb{width:22px;height:22px}
+}
 `;
 
 export function WhatIf({ intake, currentAdmissions, averageFee }: Props) {
@@ -38,7 +45,7 @@ export function WhatIf({ intake, currentAdmissions, averageFee }: Props) {
       <style href="whatif-range" precedence="default">
         {RANGE_CSS}
       </style>
-      <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-dashed border-line-strong px-5 py-2.5 sm:px-6">
+      <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-dashed border-line-strong px-4 py-2.5 sm:px-6">
         <span className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.08em] text-attention">
           <span aria-hidden className="h-1.5 w-1.5 rotate-45 bg-attention" />
           Scenario — not data
@@ -47,7 +54,7 @@ export function WhatIf({ intake, currentAdmissions, averageFee }: Props) {
       </header>
 
       {!ready ? (
-        <p className="px-5 py-8 text-sm text-muted sm:px-6">
+        <p className="px-4 py-8 text-sm text-muted sm:px-6">
           Not available. Needs approved intake, admissions and average fee for the latest year.
         </p>
       ) : (
@@ -103,7 +110,7 @@ function Slider({
         value={value}
         disabled={disabled}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="wi-range mt-3"
+        className="wi-range mt-1 sm:mt-3"
         style={{ "--p": `${p}%` } as CSSProperties}
       />
       <div className="tnum mt-1.5 flex justify-between font-mono text-[11px] text-faint">
@@ -137,7 +144,7 @@ function Body(p: {
 
   return (
     <div className="grid md:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
-      <div className="space-y-8 px-5 py-6 sm:px-6 md:border-r md:border-dashed md:border-line-strong">
+      <div className="space-y-8 px-4 py-6 sm:px-6 md:border-r md:border-dashed md:border-line-strong">
         <div>
           <Slider
             id="whatif-fill"
@@ -169,32 +176,32 @@ function Body(p: {
             p.setFill(p.currentFill);
             p.setFeeShift(0);
           }}
-          className="text-[13px] text-muted underline decoration-line-strong underline-offset-4 hover:text-ink disabled:cursor-default disabled:no-underline disabled:opacity-50"
+          className="min-h-10 text-[13px] text-muted underline decoration-line-strong underline-offset-4 hover:text-ink disabled:cursor-default disabled:no-underline disabled:opacity-50"
         >
           Reset to today
         </button>
       </div>
 
-      <div className="flex flex-col justify-between gap-8 px-5 py-6 sm:px-6" aria-live="polite">
+      <div className="flex flex-col justify-between gap-8 border-t border-dashed border-line-strong px-4 py-6 md:border-t-0 sm:px-6" aria-live="polite">
         <div>
           <div className="text-[13px] text-muted">Gross fee revenue, scenario</div>
-          <div className="display tnum mt-2 text-[52px] leading-none text-ink sm:text-[64px]">{fmtNum(gross, "inr")}</div>
+          <div className="display tnum mt-2 text-[44px] leading-none text-ink sm:text-[64px]">{fmtNum(gross, "inr")}</div>
           <div className="tnum mt-3 font-mono text-[12px] text-muted">
             {fmtNum(admissions, "count")} admissions × {fmtNum(fee, "inr")}
           </div>
         </div>
         <dl className="grid grid-cols-2 border-t border-line pt-4">
-          <div className="pr-4">
+          <div className="min-w-0 pr-3 sm:pr-4">
             <dt className="text-[12px] text-muted">Change vs today</dt>
-            <dd className="display tnum mt-1 text-[24px] leading-tight text-ink">
+            <dd className="display tnum mt-1 text-[20px] leading-tight sm:text-[24px] text-ink">
               {delta > 0 ? "+" : delta < 0 ? "−" : ""}
               {fmtNum(Math.abs(delta), "inr")}
             </dd>
             <dd className="tnum mt-0.5 text-[12px] text-muted">from {fmtNum(baseline, "inr")} today</dd>
           </div>
-          <div className="border-l border-line pl-4">
+          <div className="min-w-0 border-l border-line pl-3 sm:pl-4">
             <dt className="text-[12px] text-muted">Extra admissions</dt>
-            <dd className="display tnum mt-1 text-[24px] leading-tight text-ink">
+            <dd className="display tnum mt-1 text-[20px] leading-tight sm:text-[24px] text-ink">
               +{fmtNum(incremental, "count")}
             </dd>
             <dd className="tnum mt-0.5 text-[12px] text-muted">

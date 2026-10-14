@@ -105,7 +105,7 @@ export function Stat({
   size?: "sm" | "md" | "lg";
   className?: string;
 }) {
-  const v = size === "lg" ? "text-[44px] leading-none" : size === "sm" ? "text-xl leading-tight" : "text-[30px] leading-none";
+  const v = size === "lg" ? "text-[36px] leading-none sm:text-[44px]" : size === "sm" ? "text-xl leading-tight" : "text-[30px] leading-none";
   return (
     <div className={`min-w-0 ${className}`}>
       <div className="text-[12px] text-muted">{label}</div>
@@ -122,7 +122,7 @@ export function Stat({
 export function StatRow({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
     <div className={`overflow-x-clip ${className}`}>
-      <div className="-ml-5 grid grid-cols-2 gap-y-6 sm:grid-cols-3 lg:grid-cols-[repeat(auto-fit,minmax(150px,1fr))] [&>*]:-ml-px [&>*]:border-l [&>*]:border-line [&>*]:px-5">
+      <div className="-ml-4 grid grid-cols-2 sm:-ml-5 gap-y-6 sm:grid-cols-3 lg:grid-cols-[repeat(auto-fit,minmax(150px,1fr))] [&>*]:-ml-px [&>*]:border-l [&>*]:border-line [&>*]:px-4 sm:[&>*]:px-5">
         {children}
       </div>
     </div>
@@ -238,7 +238,7 @@ export function Th({
     <th
       scope="col"
       {...rest}
-      className={`border-b border-line-strong px-3 py-2 text-[12px] font-normal text-muted first:pl-0 last:pr-0 ${num ? "text-right" : "text-left"} ${className}`}
+      className={`border-b border-line-strong px-2 py-2 text-[12px] sm:px-3 font-normal text-muted first:pl-0 last:pr-0 ${num ? "text-right" : "text-left"} ${className}`}
     >
       {children}
     </th>
@@ -255,7 +255,7 @@ export function Td({
   return (
     <td
       {...rest}
-      className={`border-b border-line px-3 py-2.5 text-[13.5px] text-ink first:pl-0 last:pr-0 ${num ? "tnum text-right [&_[data-pop]]:left-auto [&_[data-pop]]:right-0" : ""} ${className}`}
+      className={`border-b border-line px-2 py-2.5 text-[13.5px] sm:px-3 text-ink first:pl-0 last:pr-0 ${num ? "tnum text-right [&_[data-pop]]:left-auto [&_[data-pop]]:right-0" : ""} ${className}`}
     >
       {children}
     </td>

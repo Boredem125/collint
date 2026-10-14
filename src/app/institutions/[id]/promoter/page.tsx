@@ -63,7 +63,7 @@ function EntityTable({ rows, empty }: { rows: { entity: PromoterEntityT; owner: 
         <thead>
           <tr>
             <Th>Entity</Th>
-            <Th>Linked to</Th>
+            <Th className="hidden sm:table-cell">Linked to</Th>
             <Th>Relationship</Th>
             <Th className="hidden md:table-cell">Source</Th>
           </tr>
@@ -71,9 +71,17 @@ function EntityTable({ rows, empty }: { rows: { entity: PromoterEntityT; owner: 
         <tbody>
           {rows.map(({ entity, owner }) => (
             <tr key={entity.id}>
-              <Td>{entity.name}</Td>
-              <Td className="text-muted">{owner.name}</Td>
-              <Td className="text-muted">{entity.relationship}</Td>
+              <Td>
+                {entity.name}
+                <span className="mt-0.5 block text-[12px] text-muted sm:hidden">via {owner.name}</span>
+              </Td>
+              <Td className="hidden text-muted sm:table-cell">{owner.name}</Td>
+              <Td className="text-muted">
+                {entity.relationship}
+                <span className="mt-0.5 block md:hidden">
+                  <SourceLine name={entity.sourceName} date={entity.asOfDate} />
+                </span>
+              </Td>
               <Td className="hidden md:table-cell">
                 <SourceLine name={entity.sourceName} date={entity.asOfDate} />
               </Td>
@@ -104,7 +112,7 @@ export default async function PromoterPage({ params }: { params: Promise<{ id: s
     <div className="space-y-14">
       <header>
         <Kicker>Owner and promoter</Kicker>
-        <p className="display mt-3 max-w-3xl text-[26px] leading-[1.25] text-ink sm:text-[30px]">
+        <p className="display mt-3 max-w-3xl text-[21px] leading-[1.3] text-ink sm:text-[30px] sm:leading-[1.25]">
           {controller ? `${controller} controls the college` : "No controlling body is on record"}
           {stages ? (
             <>
@@ -159,7 +167,12 @@ export default async function PromoterPage({ params }: { params: Promise<{ id: s
               <tbody>
                 {people.map((p) => (
                   <tr key={p.id}>
-                    <Td className="font-medium">{p.name}</Td>
+                    <Td className="font-medium">
+                      {p.name}
+                      <span className="mt-0.5 block font-normal md:hidden">
+                        <SourceLine name={p.sourceName} url={p.sourceUrl} date={p.asOfDate} />
+                      </span>
+                    </Td>
                     <Td className="text-muted">{p.role}</Td>
                     <Td className="hidden md:table-cell">
                       <SourceLine name={p.sourceName} url={p.sourceUrl} date={p.asOfDate} />

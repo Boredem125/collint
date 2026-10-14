@@ -37,7 +37,7 @@ export default async function SourcesPage({ params }: { params: Promise<{ id: st
   return (
     <div>
       <Kicker>Source ledger</Kicker>
-      <h2 className="display mt-2 max-w-3xl text-[26px] font-medium leading-[1.2] text-ink">{headline}</h2>
+      <h2 className="display mt-2 max-w-3xl text-[21px] font-medium leading-[1.25] text-ink sm:text-[26px] sm:leading-[1.2]">{headline}</h2>
 
       {total ? (
         <div className="mt-6">

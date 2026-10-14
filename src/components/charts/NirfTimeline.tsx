@@ -20,11 +20,11 @@ export function NirfTimeline({
             <th scope="col" className="border-b border-line-strong py-2 pr-3 text-left text-[12px] font-normal text-muted">
               Category
             </th>
-            {years.map((y) => (
+            {years.map((y, yi) => (
               <th
                 key={y}
                 scope="col"
-                className="tnum border-b border-line-strong px-3 py-2 text-right font-mono text-[11px] font-normal text-faint last:pr-0"
+                className={`tnum border-b ${yi < years.length - 3 ? "hidden sm:table-cell" : ""} border-line-strong px-2 py-2 text-right font-mono text-[11px] font-normal text-faint last:pr-0 sm:px-3`}
               >
                 {y}
               </th>
@@ -36,7 +36,7 @@ export function NirfTimeline({
             <tr key={r.category}>
               <th
                 scope="row"
-                className="whitespace-nowrap border-b border-line py-2.5 pr-3 text-left text-[13.5px] font-normal text-ink"
+                className="border-b border-line py-2.5 pr-2 text-left text-[13px] sm:whitespace-nowrap sm:pr-3 sm:text-[13.5px] font-normal text-ink"
               >
                 {(metric(r.category)?.label ?? r.category).replace(/^NIRF\s+/, "")}
               </th>
@@ -45,7 +45,10 @@ export function NirfTimeline({
                 // Popovers in the right half of the table open leftwards.
                 const flip = yi >= years.length / 2 ? "[&_[data-pop]]:left-auto [&_[data-pop]]:right-0" : "";
                 return (
-                  <td key={y} className={`border-b border-line px-3 py-2.5 text-right last:pr-0 ${flip}`}>
+                  <td
+                    key={y}
+                    className={`border-b border-line px-2 py-2.5 text-right last:pr-0 sm:px-3 ${flip} ${yi < years.length - 3 ? "hidden sm:table-cell" : ""}`}
+                  >
                     {!fact ? (
                       <span className="text-[12px] text-faint">Not ranked</span>
                     ) : fact.status === "UNAVAILABLE" || (fact.valueNum === null && fact.valueText === null) ? (

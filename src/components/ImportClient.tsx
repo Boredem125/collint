@@ -26,7 +26,7 @@ const SHEET_ORDER: SheetName[] = ["Institution", "Programmes", "Facts", "Promote
 const MAX_BYTES = 900 * 1024;
 
 const btn =
-  "inline-flex h-9 items-center justify-center gap-2 rounded-md px-3.5 text-[13px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40";
+  "inline-flex h-10 items-center sm:h-9 justify-center gap-2 rounded-md px-3.5 text-[13px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40";
 const primary = `${btn} bg-ink text-canvas hover:opacity-90`;
 const secondary = `${btn} border border-line-strong bg-surface text-ink hover:bg-sunken`;
 const ghost = `${btn} text-muted hover:bg-sunken hover:text-ink`;
@@ -148,7 +148,7 @@ export default function ImportClient({ batches }: { batches: BatchT[] }) {
 
   return (
     <div className="mt-8">
-      <ol className="grid grid-cols-4 gap-x-3" aria-label="Import steps">
+      <ol className="grid grid-cols-4 gap-x-2 sm:gap-x-3" aria-label="Import steps">
         {STEPS.map((s, i) => {
           const n = i + 1;
           const state = n === 1 ? "ready" : n < stage ? "done" : n === stage ? "current" : "todo";
@@ -156,8 +156,8 @@ export default function ImportClient({ batches }: { batches: BatchT[] }) {
             <li key={s} aria-current={state === "current" ? "step" : undefined}>
               <div className={`h-[2px] ${state === "todo" ? "bg-line" : state === "ready" ? "bg-line-strong" : "bg-ink"}`} />
               <div className="mt-2 flex items-baseline gap-2">
-                <span className="font-mono text-[11px] text-faint">0{n}</span>
-                <span className={`text-[13px] ${state === "current" ? "font-medium text-ink" : state === "done" ? "text-ink" : "text-muted"}`}>
+                <span className="hidden font-mono text-[11px] text-faint sm:inline">0{n}</span>
+                <span className={`text-[12.5px] sm:text-[13px] ${state === "current" ? "font-medium text-ink" : state === "done" ? "text-ink" : "text-muted"}`}>
                   {s}
                 </span>
                 {state === "done" ? (
@@ -271,7 +271,7 @@ export default function ImportClient({ batches }: { batches: BatchT[] }) {
                   <div className="text-[12px] text-muted">Rows accepted</div>
                   <div className="display tnum mt-1 text-[36px] leading-none text-ink">{preview.accepted}</div>
                 </div>
-                <div className="border-l border-line pl-10">
+                <div className="border-l border-line pl-6 sm:pl-10">
                   <div className="text-[12px] text-muted">Rows rejected</div>
                   <div className={`display tnum mt-1 text-[36px] leading-none ${preview.rejectedTotal ? "text-critical" : "text-ink"}`}>
                     {preview.rejectedTotal}
@@ -364,7 +364,33 @@ export default function ImportClient({ batches }: { batches: BatchT[] }) {
                 {preview.factSample.length === 0 ? (
                   <p className="mt-1 text-[13px] text-muted">No facts were accepted.</p>
                 ) : (
-                  <div className="mt-2 overflow-x-auto">
+                  <>
+                  <ul className="mt-2 divide-y divide-line border-y border-line sm:hidden">
+                    {preview.factSample.map((f) => (
+                      <li key={f.row} className="py-2.5">
+                        <div className="flex items-baseline justify-between gap-3">
+                          <span className="min-w-0 text-[13px] text-ink">
+                            {metric(f.metricKey)?.label ?? f.metricKey}
+                            {f.programme ? <span className="text-muted"> · {f.programme}</span> : null}
+                          </span>
+                          <span className={`tnum shrink-0 text-right text-[14px] ${f.status === "UNAVAILABLE" ? "text-unavailable" : "text-ink"}`}>
+                            {factValue(f)}
+                          </span>
+                        </div>
+                        <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[12px] text-muted">
+                          <span className="font-mono text-[11px]">Row {f.row} · {f.aisheCode} · {f.period}</span>
+                          <span className="inline-flex items-center gap-1.5">
+                            <StatusMark status={f.status} />
+                            {STATUS_LABEL[f.status]}
+                          </span>
+                        </div>
+                        <div className="mt-0.5 text-[12px] text-faint">
+                          {SOURCE_LABEL[f.sourceType]} · {f.sourceName} · <span className="font-mono text-[11px]">{fmtDate(f.asOfDate)}</span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="mt-2 hidden overflow-x-auto sm:block">
                     <table className="w-full border-collapse">
                       <thead>
                         <tr>
@@ -407,6 +433,7 @@ export default function ImportClient({ batches }: { batches: BatchT[] }) {
                       </tbody>
                     </table>
                   </div>
+                  </>
                 )}
               </div>
             </div>
@@ -494,7 +521,46 @@ export default function ImportClient({ batches }: { batches: BatchT[] }) {
         {batches.length === 0 ? (
           <Empty>No imports yet.</Empty>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+          <ul className="divide-y divide-line border-y border-line sm:hidden">
+            {batches.map((b) => (
+              <li key={b.id} className="py-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="break-all font-mono text-[12.5px] text-ink">{b.filename}</div>
+                    <div className="mt-0.5 text-[12px] text-muted">
+                      <span className="font-mono text-[11px]">{fmtDate(b.createdAt)}</span> ·{" "}
+                      <span className="tnum text-ink">{b.accepted}</span> accepted ·{" "}
+                      <span className={`tnum ${b.rejected ? "text-ink" : ""}`}>{b.rejected}</span> rejected
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => onRollback(b)}
+                    disabled={busy !== null}
+                    className="min-h-[40px] shrink-0 rounded px-2 text-[13px] text-critical hover:bg-critical/10 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    {busy === b.id ? "Rolling back…" : "Roll back"}
+                  </button>
+                </div>
+                <div className="mt-1 text-[12.5px]">
+                  {b.institutions.length ? (
+                    b.institutions.map((i, n) => (
+                      <span key={i.id}>
+                        {n ? ", " : ""}
+                        <Link href={`/institutions/${i.id}`} className="text-brand hover:underline">
+                          {i.name}
+                        </Link>
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-muted">None, data added to existing institutions</span>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+          <div className="hidden overflow-x-auto sm:block">
             <table className="w-full border-collapse">
               <thead>
                 <tr>
@@ -546,6 +612,7 @@ export default function ImportClient({ batches }: { batches: BatchT[] }) {
               </tbody>
             </table>
           </div>
+          </>
         )}
         <p className="mt-3 max-w-3xl text-[12px] leading-relaxed text-faint">
           Roll back deletes the institutions a batch created, everything recorded under them, and every fact it imported.

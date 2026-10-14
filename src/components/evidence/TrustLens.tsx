@@ -46,6 +46,7 @@ export function TrustLensToggle() {
       aria-checked={on}
       onClick={toggle}
       title="Fade every number that is not backed by a verified source"
+      aria-label="Verified only"
       className={`no-print inline-flex h-8 shrink-0 items-center gap-2 whitespace-nowrap rounded-md px-2 text-[12.5px] transition-colors hover:bg-sunken ${on ? "text-ink" : "text-muted hover:text-ink"}`}
     >
       <span
@@ -56,7 +57,7 @@ export function TrustLensToggle() {
           className={`absolute top-1/2 h-[8px] w-[8px] -translate-y-1/2 rounded-full transition-all ${on ? "left-[12px] bg-ink" : "left-[2px] bg-faint"}`}
         />
       </span>
-      Verified only
+      <span className="hidden sm:inline">Verified only</span>
     </button>
   );
 }

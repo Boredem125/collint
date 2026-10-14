@@ -113,7 +113,7 @@ export default async function PlacementsPage({ params }: { params: Promise<{ id:
     <div className="space-y-14">
       <header>
         <Kicker>Placements{years.length ? ` · ${years[0]} to ${years.at(-1)}` : ""}</Kicker>
-        <h2 className="display mt-3 max-w-3xl text-[26px] leading-[1.25] text-ink sm:text-[30px]">
+        <h2 className="display mt-3 max-w-3xl text-[21px] leading-[1.3] text-ink sm:text-[30px] sm:leading-[1.25]">
           {rateClause} <span className="text-muted">{claimClause}</span>
         </h2>
 
@@ -196,7 +196,26 @@ export default async function PlacementsPage({ params }: { params: Promise<{ id:
                 />
               </div>
             </div>
-            <div className="mt-8 overflow-x-auto">
+            <ul className="mt-8 border-t border-line-strong sm:hidden">
+              {newestFirst.map((y) => (
+                <li key={y} className="border-b border-line py-2.5 text-[13.5px]">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="font-mono text-[12.5px] text-ink">{y}</span>
+                    <span className="tnum text-ink">
+                      <span className="mr-1.5 text-[12px] text-muted">Rate</span>
+                      <Num fact={pick(facts, "placement.rate", y)} />
+                    </span>
+                  </div>
+                  <div className="tnum mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-muted">
+                    <span>Placed <Num fact={pick(facts, "placement.placed", y)} /> of <Num fact={pick(facts, "placement.eligible", y)} /></span>
+                    <span>Median <Num fact={pick(facts, "placement.median", y)} /></span>
+                    <span>Avg <Num fact={pick(facts, "placement.average", y)} /></span>
+                    <span>High <Num fact={pick(facts, "placement.highest", y)} /></span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-8 hidden overflow-x-auto sm:block">
               <table className="w-full">
                 <thead>
                   <tr>
@@ -260,24 +279,29 @@ export default async function PlacementsPage({ params }: { params: Promise<{ id:
                 <thead>
                   <tr>
                     <Th>Recruiter</Th>
-                    <Th>Sector</Th>
-                    <Th>Years on campus</Th>
+                    <Th className="hidden sm:table-cell">Sector</Th>
+                    <Th className="hidden sm:table-cell">Years on campus</Th>
                     <Th>Status</Th>
-                    <Th>Source</Th>
+                    <Th className="hidden sm:table-cell">Source</Th>
                   </tr>
                 </thead>
                 <tbody>
                   {top.map((r) => (
                     <tr key={r.id} data-evidence={r.status}>
-                      <Td>{r.name}</Td>
-                      <Td className="text-muted">{r.sector}</Td>
-                      <Td className="whitespace-nowrap font-mono text-[12px] text-muted">
+                      <Td>
+                        {r.name}
+                        <div className="mt-0.5 text-[12px] text-muted sm:hidden">
+                          {r.sector} · <span className="font-mono">{yearSpan(r.years)}</span>
+                        </div>
+                      </Td>
+                      <Td className="hidden text-muted sm:table-cell">{r.sector}</Td>
+                      <Td className="hidden sm:table-cell whitespace-nowrap font-mono text-[12px] text-muted">
                         {yearSpan(r.years)}
                       </Td>
                       <Td>
                         <StatusBadge status={r.status} />
                       </Td>
-                      <Td className="text-[12px] text-muted">
+                      <Td className="hidden text-[12px] text-muted sm:table-cell">
                         {SOURCE_LABEL[r.sourceType]} · {r.sourceName}
                       </Td>
                     </tr>

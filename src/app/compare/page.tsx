@@ -218,14 +218,14 @@ export default async function ComparePage({
   return (
     <div>
       <Kicker>Compare</Kicker>
-      <h1 className="display mt-2 max-w-4xl text-[28px] font-medium leading-[1.15] text-ink sm:text-[32px]">{headline}</h1>
+      <h1 className="display mt-2 max-w-4xl text-[22px] font-medium leading-[1.2] text-ink sm:text-[32px] sm:leading-[1.15]">{headline}</h1>
 
       {all.length ? (
         <form method="get" action="/compare" className="mt-6 flex flex-wrap items-center gap-2">
           {all.map((p) => (
             <label
               key={p.inst.id}
-              className="inline-flex cursor-pointer select-none items-center gap-2 rounded-full border border-line bg-surface px-3 py-1.5 text-[13px] text-muted transition-colors hover:border-line-strong hover:text-ink has-[:checked]:border-ink has-[:checked]:bg-ink has-[:checked]:text-canvas has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-brand"
+              className="inline-flex cursor-pointer select-none items-center gap-2 min-h-[40px] rounded-full border border-line bg-surface px-3 py-1.5 text-[13px] sm:min-h-0 text-muted transition-colors hover:border-line-strong hover:text-ink has-[:checked]:border-ink has-[:checked]:bg-ink has-[:checked]:text-canvas has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-brand"
             >
               <input
                 type="checkbox"
@@ -245,7 +245,7 @@ export default async function ComparePage({
           ))}
           <button
             type="submit"
-            className="ml-1 inline-flex h-8 items-center rounded-md border border-line-strong bg-surface px-3 text-[13px] font-medium text-ink hover:bg-sunken"
+            className="ml-1 inline-flex h-10 items-center sm:h-8 rounded-md border border-line-strong bg-surface px-3 text-[13px] font-medium text-ink hover:bg-sunken"
           >
             Compare
           </button>
@@ -268,7 +268,59 @@ export default async function ComparePage({
           <Empty>Select at least two institutions to compare</Empty>
         </div>
       ) : (
-        <div className="mt-10 overflow-x-auto">
+        <>
+        <div className="mt-8 sm:hidden">
+          <ol className="flex flex-wrap gap-x-4 gap-y-1 border-b-2 border-ink pb-2 text-[12px] text-muted">
+            {chosen.map((p, i) => (
+              <li key={p.inst.id} className="flex items-center gap-1.5">
+                <span className="font-mono text-[11px] text-faint">{i + 1}</span>
+                <Link href={`/institutions/${p.inst.id}`} className="inline-flex min-h-[40px] items-center text-ink hover:text-brand">
+                  {p.inst.name}
+                </Link>
+              </li>
+            ))}
+          </ol>
+          {GROUPS.map((g) => (
+            <section key={g.name}>
+              <div className="border-b border-line-strong pb-1.5 pt-6">
+                <Kicker>{g.name}</Kicker>
+              </div>
+              {g.rows.map((r) => {
+                const sizes = r.size ? chosen.map((p) => r.size!(p)) : null;
+                const max =
+                  r.scale === "pct" ? 100 : Math.max(0, ...(sizes ?? []).map((m) => (m.v !== null && Number.isFinite(m.v) ? m.v : 0)));
+                return (
+                  <div key={r.label} className="border-b border-line py-2.5">
+                    <div className="text-[12.5px] text-muted">{r.label}</div>
+                    <ul className="mt-1 space-y-1.5">
+                      {chosen.map((p, i) => {
+                        const period = r.period?.(p);
+                        return (
+                          <li key={p.inst.id} className="grid grid-cols-[minmax(0,6.5rem)_1fr] items-baseline gap-x-3">
+                            <span className="truncate text-[12px] text-faint">
+                              <span className="font-mono text-[11px]">{i + 1}</span> {p.inst.name}
+                            </span>
+                            <span className="min-w-0">
+                              <span className="flex flex-wrap items-baseline gap-x-2">
+                                <span className="tnum text-[15px] text-ink">{r.cell(p)}</span>
+                                {period ? <span className="font-mono text-[11px] text-faint">{period}</span> : null}
+                              </span>
+                              {sizes ? <Bar m={sizes[i]} max={max} /> : null}
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                );
+              })}
+            </section>
+          ))}
+          <p className="mt-4 text-[12px] text-faint">
+            Bars show size within each row, not quality. Evidence coverage rates the diligence, not the institution.
+          </p>
+        </div>
+        <div className="mt-10 hidden overflow-x-auto sm:block">
           <table className="w-full min-w-[640px] table-fixed border-collapse">
             <colgroup>
               <col className="w-[200px]" />
@@ -341,6 +393,7 @@ export default async function ComparePage({
             Bars show size within each row, not quality. Evidence coverage rates the diligence, not the institution.
           </p>
         </div>
+        </>
       )}
     </div>
   );

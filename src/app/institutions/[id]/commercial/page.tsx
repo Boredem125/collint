@@ -116,7 +116,7 @@ export default async function CommercialPage({ params }: { params: Promise<{ id:
             {cov.verified} of {cov.expected} commercial metrics verified
           </span>
         </div>
-        <p className="display mt-3 max-w-3xl text-[26px] leading-[1.25] text-ink sm:text-[30px]">
+        <p className="display mt-3 max-w-3xl text-[21px] leading-[1.3] text-ink sm:text-[30px] sm:leading-[1.25]">
           {clauses.length ? (
             <>
               {clauses.map((c, i) => (

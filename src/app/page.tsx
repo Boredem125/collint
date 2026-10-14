@@ -136,7 +136,7 @@ export default async function Pipeline() {
   return (
     <div className="space-y-14">
       <header>
-        <h1 className="display text-[44px] font-medium leading-none text-ink">Pipeline</h1>
+        <h1 className="display text-[34px] font-medium sm:text-[44px] leading-none text-ink">Pipeline</h1>
         <p className="mt-3 text-[15px] text-muted">{summary}</p>
       </header>
 
@@ -169,12 +169,12 @@ export default async function Pipeline() {
           </StatRow>
 
           <Section index="01" title="Board" aside="By deal stage">
-            <div className="-mx-5 overflow-x-auto px-5 pb-2">
-              <div className="grid min-w-[1080px] grid-cols-5 gap-4">
+            <div className="-mx-4 snap-x snap-mandatory scroll-px-4 overflow-x-auto px-4 pb-2 sm:-mx-5 sm:snap-none sm:scroll-px-5 sm:px-5">
+              <div className="flex gap-4 sm:grid sm:min-w-[1080px] sm:grid-cols-5">
                 {DEAL_STAGES.map((s) => {
                   const items = rows.filter((r) => r.p.inst.stage === s.key);
                   return (
-                    <div key={s.key} className="min-w-0">
+                    <div key={s.key} className="w-[85%] min-w-0 shrink-0 snap-start sm:w-auto">
                       <div className="mb-3 flex items-baseline justify-between border-b border-line-strong pb-1.5">
                         <span className="text-[13px] font-medium text-ink">{s.label}</span>
                         <span className="font-mono text-[11px] text-faint">{items.length}</span>
@@ -196,7 +196,46 @@ export default async function Pipeline() {
           </Section>
 
           <Section index="02" title="All institutions" aside="Evidence verified rates the diligence, not the college">
-            <div className="overflow-x-auto">
+            <ul className="divide-y divide-line border-y border-line sm:hidden">
+              {rows.map((r) => (
+                <li key={r.p.inst.id} className="py-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Link
+                          href={`/institutions/${r.p.inst.id}`}
+                          className="display inline-flex min-h-[40px] items-center text-[16px] font-medium leading-snug text-ink hover:text-brand"
+                        >
+                          {r.p.inst.name}
+                        </Link>
+                        {r.p.inst.isSample && <SampleBadge />}
+                      </div>
+                      <div className="text-[12px] text-muted">
+                        {r.p.inst.city} · {DEAL_STAGES.find((s) => s.key === r.p.inst.stage)?.label ?? r.p.inst.stage} ·{" "}
+                        <span className="font-mono text-[11px]">{r.days}d</span>
+                      </div>
+                    </div>
+                    <div className="shrink-0 text-right text-[14px] text-ink [&_[data-pop]]:left-auto [&_[data-pop]]:right-0">
+                      <Derived value={r.util?.value} unit="percent" basis={r.util?.basis ?? []} />
+                      <div className="font-mono text-[10.5px] text-faint">Util.{r.ay ? ` ${r.ay}` : ""}</div>
+                    </div>
+                  </div>
+                  <div className="mt-2 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 text-[12.5px]">
+                    <span className="text-muted">
+                      Placement <span className="text-ink"><Num fact={r.placement} /></span>
+                      {r.placement && <span className="font-mono text-[10.5px] text-faint"> {r.placement.period}</span>}
+                    </span>
+                    <Link href={`/institutions/${r.p.inst.id}/risks`} className="inline-flex min-h-[40px] items-center hover:underline">
+                      <Marks critical={r.critical} attention={r.attention} />
+                    </Link>
+                  </div>
+                  <div className="mt-1">
+                    <CoverageBar pct={r.cov} />
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <div className="hidden overflow-x-auto sm:block">
               <table className="w-full min-w-[880px]">
                 <thead>
                   <tr>

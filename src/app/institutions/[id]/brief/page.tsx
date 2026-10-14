@@ -430,8 +430,12 @@ export default async function BriefPage({ params }: { params: Promise<{ id: stri
             <table className="mt-1 w-full border-collapse text-[10px] leading-snug">
               <thead>
                 <tr className="text-left text-faint">
-                  {["Metric", "Period", "Value", "Source", "As of", "Status"].map((h) => (
-                    <th key={h} scope="col" className="border-b border-line-strong py-1 pr-2 font-normal last:pr-0">
+                  {["Metric", "Period", "Value", "Source", "As of", "Status"].map((h, i) => (
+                    <th
+                      key={h}
+                      scope="col"
+                      className={`border-b border-line-strong py-1 pr-2 font-normal last:pr-0 ${i > 3 ? "hidden sm:table-cell print:table-cell" : ""}`}
+                    >
                       {h}
                     </th>
                   ))}
@@ -444,12 +448,17 @@ export default async function BriefPage({ params }: { params: Promise<{ id: stri
                     <td className="whitespace-nowrap border-b border-line py-[3px] pr-2 font-mono text-muted">{f.period}</td>
                     <td className="tnum whitespace-nowrap border-b border-line py-[3px] pr-2 text-ink">{fmtFact(f)}</td>
                     <td className="border-b border-line py-[3px] pr-2 text-muted">
-                      {SOURCE_LABEL[f.sourceType]}: {f.sourceName}
+                      <span className="break-words">
+                        {SOURCE_LABEL[f.sourceType]}: {f.sourceName}
+                      </span>
+                      <span className={`block sm:hidden print:hidden ${TONE[f.status]}`}>
+                        {STATUS_LABEL[f.status]} · <span className="font-mono text-muted">{fmtDate(f.asOfDate)}</span>
+                      </span>
                     </td>
-                    <td className="whitespace-nowrap border-b border-line py-[3px] pr-2 font-mono text-muted">
+                    <td className="hidden whitespace-nowrap border-b border-line py-[3px] pr-2 font-mono text-muted sm:table-cell print:table-cell">
                       {fmtDate(f.asOfDate)}
                     </td>
-                    <td className={`whitespace-nowrap border-b border-line py-[3px] ${TONE[f.status]}`}>
+                    <td className={`hidden whitespace-nowrap border-b border-line py-[3px] sm:table-cell print:table-cell ${TONE[f.status]}`}>
                       {STATUS_LABEL[f.status]}
                     </td>
                   </tr>

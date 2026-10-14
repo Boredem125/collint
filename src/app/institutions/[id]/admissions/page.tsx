@@ -108,7 +108,7 @@ export default async function AdmissionsPage({ params }: { params: Promise<{ id:
     <div className="space-y-14">
       <header>
         <Kicker>Admissions{years.length ? ` · ${years[0]} to ${years.at(-1)}` : ""}</Kicker>
-        <h2 className="display mt-3 max-w-3xl text-[26px] leading-[1.25] text-ink sm:text-[30px]">
+        <h2 className="display mt-3 max-w-3xl text-[21px] leading-[1.3] text-ink sm:text-[30px] sm:leading-[1.25]">
           {utilClause} <span className="text-muted">{claimClause}</span>
         </h2>
 
@@ -171,8 +171,8 @@ export default async function AdmissionsPage({ params }: { params: Promise<{ id:
                 <thead>
                   <tr>
                     <Th>Year</Th>
-                    <Th num>Approved intake</Th>
-                    <Th num>College claim</Th>
+                    <Th num className="hidden sm:table-cell">Approved intake</Th>
+                    <Th num className="hidden sm:table-cell">College claim</Th>
                     <Th num>Independent count</Th>
                     <Th num>Gap</Th>
                     <Th num>Utilisation</Th>
@@ -182,10 +182,10 @@ export default async function AdmissionsPage({ params }: { params: Promise<{ id:
                   {rows.map((r) => (
                     <tr key={r.period}>
                       <Td className="font-mono text-[12.5px]">{r.period}</Td>
-                      <Td num>
+                      <Td num className="hidden sm:table-cell">
                         <Num fact={r.intake} />
                       </Td>
-                      <Td num className="text-muted">
+                      <Td num className="hidden sm:table-cell text-muted">
                         <Num fact={r.claim} />
                       </Td>
                       <Td num>
@@ -221,8 +221,8 @@ export default async function AdmissionsPage({ params }: { params: Promise<{ id:
               <thead>
                 <tr>
                   <Th>Programme</Th>
-                  <Th>Level</Th>
-                  <Th num>Intake</Th>
+                  <Th className="hidden sm:table-cell">Level</Th>
+                  <Th num className="hidden sm:table-cell">Intake</Th>
                   <Th num>Admissions</Th>
                   <Th num>Utilisation</Th>
                 </tr>
@@ -231,8 +231,8 @@ export default async function AdmissionsPage({ params }: { params: Promise<{ id:
                 {courseRows.map((r) => (
                   <tr key={r.p.id}>
                     <Td>{r.p.name}</Td>
-                    <Td className="text-muted">{r.p.level}</Td>
-                    <Td num>
+                    <Td className="hidden sm:table-cell text-muted">{r.p.level}</Td>
+                    <Td num className="hidden sm:table-cell">
                       <Num fact={r.intake} />
                     </Td>
                     <Td num>

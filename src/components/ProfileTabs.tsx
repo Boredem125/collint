@@ -56,20 +56,20 @@ export default function ProfileTabs({ id, counts }: { id: string; counts?: Recor
           </Link>
         </li>
       </ol>
-      <div className="-mx-5 flex gap-1 overflow-x-auto border-b border-line px-5 lg:hidden">
+      <div className="-mx-4 flex gap-1 overflow-x-auto border-b border-line px-4 [scrollbar-width:none] sm:-mx-5 sm:px-5 lg:hidden">
         {items.map((t) => (
           <Link
             key={t.slug}
             href={t.href}
             aria-current={t.active ? "page" : undefined}
-            className={`-mb-px whitespace-nowrap border-b-2 px-2.5 py-2 text-[13px] ${
+            className={`-mb-px whitespace-nowrap border-b-2 px-2.5 py-3 text-[13.5px] ${
               t.active ? "border-ink text-ink" : "border-transparent text-muted"
             }`}
           >
             {t.label}
           </Link>
         ))}
-        <Link href={`${base}/brief`} className="whitespace-nowrap px-2.5 py-2 text-[13px] text-brand">
+        <Link href={`${base}/brief`} className="whitespace-nowrap px-2.5 py-3 text-[13.5px] text-brand">
           Brief →
         </Link>
       </div>

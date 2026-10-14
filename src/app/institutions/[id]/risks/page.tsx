@@ -69,7 +69,7 @@ export default async function RisksPage({ params }: { params: Promise<{ id: stri
     <div className="space-y-14">
       <header>
         <Kicker>Risk and red flags</Kicker>
-        <p className="display mt-3 max-w-3xl text-[26px] leading-[1.25] text-ink sm:text-[30px]">
+        <p className="display mt-3 max-w-3xl text-[21px] leading-[1.3] text-ink sm:text-[30px] sm:leading-[1.25]">
           {verdict(byBand("CRITICAL").length, byBand("ATTENTION").length, byBand("VERIFIED").length)}
         </p>
       </header>

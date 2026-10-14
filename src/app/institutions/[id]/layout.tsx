@@ -23,7 +23,7 @@ export default async function InstitutionLayout({
   const stage = DEAL_STAGES.find((s) => s.key === inst.stage)?.label ?? inst.stage;
 
   return (
-    <div className="grid gap-x-12 gap-y-6 lg:grid-cols-[200px_minmax(0,1fr)]">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-x-12 gap-y-5 lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-y-6">
       <header className="lg:col-span-2">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <Kicker>AISHE {inst.aisheCode}</Kicker>
@@ -31,10 +31,10 @@ export default async function InstitutionLayout({
           <Kicker>{stage}</Kicker>
           {inst.isSample && <SampleBadge />}
         </div>
-        <h1 className="display mt-2 max-w-4xl text-[34px] font-medium leading-[1.08] text-ink sm:text-[42px]">
+        <h1 className="display mt-2 max-w-4xl text-[28px] font-medium leading-[1.1] text-ink sm:text-[42px] sm:leading-[1.08]">
           {inst.name}
         </h1>
-        <p className="mt-2 text-[14px] text-muted">
+        <p className="mt-2 text-[13px] leading-relaxed text-muted sm:text-[14px]">
           {inst.city}, {inst.state}
           <span className="mx-2 text-faint">/</span>
           {inst.university}
@@ -47,7 +47,7 @@ export default async function InstitutionLayout({
           ) : null}
         </p>
       </header>
-      <aside className="lg:sticky lg:top-20 lg:self-start">
+      <aside className="no-print sticky top-14 z-30 -mx-4 bg-canvas/95 px-4 backdrop-blur sm:-mx-5 sm:px-5 lg:top-20 lg:mx-0 lg:self-start lg:bg-transparent lg:px-0 lg:backdrop-blur-none">
         <ProfileTabs id={inst.id} counts={{ risks: open, notes: profile.notes.length }} />
         <div className="mt-6 hidden border-t border-line pt-4 text-xs text-muted lg:block">
           <div className="flex justify-between">

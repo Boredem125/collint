@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import { Geist, Geist_Mono, Newsreader } from "next/font/google";
 import "./globals.css";
@@ -6,6 +6,7 @@ import { TrustLensProvider, TrustLensToggle } from "@/components/evidence/TrustL
 import CommandSearch from "@/components/CommandSearch";
 import ThemeToggle from "@/components/ThemeToggle";
 import NavLink from "@/components/NavLink";
+import MobileNav from "@/components/MobileNav";
 
 const sans = Geist({ subsets: ["latin"], variable: "--font-geist" });
 const mono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono" });
@@ -14,6 +15,16 @@ const serif = Newsreader({ subsets: ["latin"], variable: "--font-newsreader", st
 export const metadata: Metadata = {
   title: { default: "Collint", template: "%s · Collint" },
   description: "College intelligence for partnership due diligence. Every number carries its source.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f3f0e8" },
+    { media: "(prefers-color-scheme: dark)", color: "#12110f" },
+  ],
 };
 
 // Sets the stored theme before first paint to avoid a flash.
@@ -28,7 +39,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen antialiased">
         <TrustLensProvider>
           <header className="no-print sticky top-0 z-40 border-b border-line bg-canvas/85 backdrop-blur">
-            <div className="mx-auto flex h-14 max-w-[1320px] items-center gap-3 px-5">
+            <div className="mx-auto flex h-14 max-w-[1320px] items-center gap-2 px-4 sm:gap-3 sm:px-5">
               <Link href="/" className="flex items-baseline gap-2 pr-2">
                 <span className="display text-[23px] font-semibold italic leading-none tracking-tight text-ink">
                   Collint
@@ -42,14 +53,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <NavLink href="/compare">Compare</NavLink>
                 <NavLink href="/import">Import</NavLink>
               </nav>
-              <div className="ml-auto w-full max-w-sm">
+              <div className="ml-auto min-w-0 flex-1 sm:max-w-sm">
                 <CommandSearch />
               </div>
               <TrustLensToggle />
               <ThemeToggle />
             </div>
           </header>
-          <main className="mx-auto max-w-[1320px] px-5 pb-24 pt-8">{children}</main>
+          <main className="mx-auto max-w-[1320px] px-4 pb-28 pt-6 sm:px-5 sm:pb-24 sm:pt-8">{children}</main>
+          <MobileNav />
         </TrustLensProvider>
       </body>
     </html>

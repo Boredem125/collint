@@ -94,9 +94,9 @@ function Chip({ status, label, children }: { status: FactStatus; label: string; 
       <span
         data-pop
         role="tooltip"
-        className="absolute left-0 top-full z-50 hidden w-[260px] pt-2 group-hover/ev:block group-focus/ev:block group-focus-within/ev:block"
+        className="absolute left-0 top-full z-50 hidden w-[260px] pt-2 max-sm:fixed max-sm:bottom-20! max-sm:left-4! max-sm:right-4! max-sm:top-auto! max-sm:w-auto! group-hover/ev:block group-focus/ev:block group-focus-within/ev:block"
       >
-        <span className="block max-h-[340px] overflow-y-auto whitespace-normal rounded-md border border-line-strong bg-surface p-3 text-left font-sans text-[12px] font-normal not-italic normal-case leading-snug tracking-normal text-ink shadow-[0_14px_36px_-18px_rgb(0_0_0/0.45),0_2px_4px_-2px_rgb(0_0_0/0.08)] [font-variant-numeric:normal]">
+        <span className="block max-h-[min(340px,60vh)] overflow-y-auto whitespace-normal rounded-md border border-line-strong bg-surface p-3 text-left font-sans text-[12px] font-normal not-italic normal-case leading-snug tracking-normal text-ink shadow-[0_14px_36px_-18px_rgb(0_0_0/0.45),0_2px_4px_-2px_rgb(0_0_0/0.08)] [font-variant-numeric:normal]">
           {children}
         </span>
       </span>

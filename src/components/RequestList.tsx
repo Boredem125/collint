@@ -93,29 +93,29 @@ export default function RequestList({
   }
 
   return (
-    <div>
-      <div className="sticky top-14 z-10 -mx-1 mb-8 flex flex-wrap items-center gap-x-4 gap-y-2 border-y border-line bg-canvas px-1 py-2.5">
+    <div className="flex flex-col">
+      <div className="sticky bottom-[calc(60px+env(safe-area-inset-bottom))] z-10 order-last -mx-4 mt-8 flex flex-wrap items-center gap-x-4 gap-y-2 border-y border-line bg-canvas px-4 py-2.5 sm:top-14 sm:bottom-auto sm:order-none sm:-mx-1 sm:mb-8 sm:mt-0 sm:px-1">
         <span className="text-[13px] text-ink">
           <span className="tnum font-medium">{n}</span>
           <span className="text-muted"> of {allIds.length} selected for the request letter</span>
         </span>
-        <span className="flex gap-1 text-[12.5px]">
-          <button type="button" onClick={() => toggle(allIds, true)} className="px-1 text-muted hover:text-ink">
+        <span className="flex items-center gap-1 text-[12.5px]">
+          <button type="button" onClick={() => toggle(allIds, true)} className="min-h-10 px-2 text-muted hover:text-ink sm:min-h-0 sm:px-1">
             All
           </button>
           <span className="text-faint">/</span>
-          <button type="button" onClick={() => toggle(allIds, false)} className="px-1 text-muted hover:text-ink">
+          <button type="button" onClick={() => toggle(allIds, false)} className="min-h-10 px-2 text-muted hover:text-ink sm:min-h-0 sm:px-1">
             None
           </button>
         </span>
-        <span className="ml-auto flex items-center gap-2">
-          <span role="status" className="text-[12.5px] text-muted">
+        <span className="flex w-full flex-wrap items-center justify-end gap-2 sm:ml-auto sm:w-auto sm:flex-nowrap">
+          <span role="status" className="mr-auto text-[12.5px] text-muted sm:mr-0">
             {copied === "done" ? "Letter copied" : copied === "failed" ? "Copy blocked by the browser; use download" : ""}
           </span>
-          <Button type="button" onClick={copy} disabled={!n}>
+          <Button type="button" onClick={copy} disabled={!n} className="min-h-10 sm:min-h-0">
             Copy letter
           </Button>
-          <Button type="button" variant="primary" onClick={download} disabled={!n}>
+          <Button type="button" variant="primary" onClick={download} disabled={!n} className="min-h-10 sm:min-h-0">
             Download .txt
           </Button>
         </span>
@@ -128,13 +128,13 @@ export default function RequestList({
           return (
             <section key={g.source}>
               <header className="flex items-baseline justify-between gap-3 border-b-2 border-ink pb-2">
-                <label className="flex cursor-pointer items-baseline gap-3">
+                <label className="flex min-h-10 cursor-pointer items-center gap-3 sm:min-h-0 sm:items-baseline">
                   <input
                     type="checkbox"
                     checked={allOn}
                     onChange={(e) => toggle(ids, e.target.checked)}
                     aria-label={`Select all requests for ${g.source}`}
-                    className="translate-y-px accent-current"
+                    className="h-6 w-6 shrink-0 accent-current sm:h-auto sm:w-auto sm:translate-y-px"
                   />
                   <span className="display text-[19px] font-medium text-ink">{g.source}</span>
                 </label>
@@ -147,14 +147,14 @@ export default function RequestList({
                   return (
                     <li
                       key={gap.id}
-                      className={`grid grid-cols-[20px_minmax(0,1fr)] gap-x-3 border-b border-line py-3.5 sm:grid-cols-[20px_minmax(0,1fr)_auto] ${on ? "" : "opacity-55"}`}
+                      className={`grid grid-cols-[24px_minmax(0,1fr)] gap-x-3 border-b border-line py-3.5 sm:grid-cols-[20px_minmax(0,1fr)_auto] ${on ? "" : "opacity-55"}`}
                     >
                       <input
                         type="checkbox"
                         checked={on}
                         onChange={(e) => toggle([gap.id], e.target.checked)}
                         aria-label={`Include ${gap.label} ${gap.period} in the request`}
-                        className="mt-1 accent-current"
+                        className="h-6 w-6 accent-current sm:mt-1 sm:h-auto sm:w-auto"
                       />
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">

@@ -33,7 +33,7 @@ export default async function NotesPage({ params }: { params: Promise<{ id: stri
     <div className="space-y-12">
       <header>
         <Kicker>Notes &amp; stage</Kicker>
-        <h2 className="display mt-2 max-w-3xl text-[26px] font-medium leading-snug text-ink">
+        <h2 className="display mt-2 max-w-3xl text-[21px] font-medium leading-snug text-ink sm:text-[26px]">
           {headline}
         </h2>
         {decision ? (

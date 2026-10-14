@@ -244,7 +244,7 @@ export default async function OverviewPage({ params }: { params: Promise<{ id: s
     <div className="space-y-14">
       <header>
         <Kicker>Overview{uLast ? ` · AY ${uLast.period}` : ""}</Kicker>
-        <h2 className="display mt-3 max-w-3xl text-[26px] leading-[1.25] text-ink sm:text-[30px]">
+        <h2 className="display mt-3 max-w-3xl text-[21px] leading-[1.3] text-ink sm:text-[30px] sm:leading-[1.25]">
           {utilClause}
           {proofClause}. <span className="text-muted">{flagSentence}</span>
         </h2>

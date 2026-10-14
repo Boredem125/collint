@@ -30,13 +30,14 @@ const csvCell = (v: string) => {
 };
 
 const control =
-  "h-8 rounded-md border border-line bg-surface px-2 text-[13px] text-ink outline-none hover:border-line-strong focus-visible:border-line-strong";
+  "h-10 rounded-md text-base sm:h-8 sm:text-[13px] border border-line bg-surface px-2 text-ink outline-none hover:border-line-strong focus-visible:border-line-strong";
 
 export function FactLedger({ facts, programmes }: { facts: FactT[]; programmes: ProgrammeT[] }) {
   const [module, setModule] = useState<ModuleKey | "">("");
   const [source, setSource] = useState<SourceType | "">("");
   const [status, setStatus] = useState<FactStatus | "">("");
   const [q, setQ] = useState("");
+  const [open, setOpen] = useState(false);
 
   const progName = useMemo(() => new Map(programmes.map((p) => [p.id, p.name])), [programmes]);
 
@@ -149,9 +150,9 @@ export function FactLedger({ facts, programmes }: { facts: FactT[]; programmes: 
 
   return (
     <div>
-      <div className="no-print sticky top-14 z-20 -mx-1 border-b border-line bg-canvas/95 px-1 py-3 backdrop-blur">
+      <div className="no-print z-20 -mx-1 sm:sticky sm:top-14 border-b border-line bg-canvas/95 px-1 py-3 backdrop-blur">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          <div role="group" aria-label="Filter by status" className="flex flex-wrap rounded-md border border-line bg-surface p-0.5">
+          <div role="group" aria-label="Filter by status" className="flex w-full overflow-x-auto rounded-md border border-line bg-surface p-0.5 sm:w-auto sm:flex-wrap sm:overflow-visible">
             {segments.map((s) => {
               const active = status === s.key;
               return (
@@ -160,7 +161,7 @@ export function FactLedger({ facts, programmes }: { facts: FactT[]; programmes: 
                   type="button"
                   onClick={() => setStatus(s.key)}
                   aria-pressed={active}
-                  className={`flex h-7 items-center gap-1.5 rounded-[5px] px-2.5 text-[12.5px] transition-colors ${
+                  className={`flex h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[5px] px-2.5 sm:h-7 text-[12.5px] transition-colors ${
                     active ? "bg-ink text-canvas" : "text-muted hover:bg-sunken hover:text-ink"
                   }`}
                 >
@@ -172,9 +173,21 @@ export function FactLedger({ facts, programmes }: { facts: FactT[]; programmes: 
             })}
           </div>
 
+          <button
+            type="button"
+            onClick={() => setOpen((o) => !o)}
+            aria-expanded={open}
+            className="inline-flex h-10 items-center gap-1.5 rounded-md border border-line bg-surface px-3 text-[13px] text-ink sm:hidden"
+          >
+            Filters{module || source || q.trim() ? <span className="h-1.5 w-1.5 rounded-full bg-brand" aria-hidden /> : null}
+            <svg viewBox="0 0 12 12" width="10" height="10" aria-hidden className={open ? "rotate-180" : ""}>
+              <path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+            </svg>
+          </button>
+          <div className={`${open ? "flex" : "hidden"} w-full flex-wrap items-center gap-2 sm:contents`}>
           <select
             aria-label="Module"
-            className={control}
+            className={`${control} min-w-0 flex-1 sm:flex-none`}
             value={module}
             onChange={(e) => setModule(e.target.value as ModuleKey | "")}
           >
@@ -187,7 +200,7 @@ export function FactLedger({ facts, programmes }: { facts: FactT[]; programmes: 
           </select>
           <select
             aria-label="Source type"
-            className={control}
+            className={`${control} min-w-0 flex-1 sm:flex-none`}
             value={source}
             onChange={(e) => setSource(e.target.value as SourceType | "")}
           >
@@ -204,9 +217,10 @@ export function FactLedger({ facts, programmes }: { facts: FactT[]; programmes: 
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Search metric, source, period, note"
-            className={`${control} min-w-48 flex-1 placeholder:text-faint`}
+            className={`${control} w-full min-w-0 placeholder:text-faint sm:w-auto sm:min-w-48 sm:flex-1`}
           />
-          <div className="flex items-center gap-2">
+          </div>
+          <div className="ml-auto flex items-center gap-2 sm:ml-0">
             {filtered ? (
               <button
                 type="button"
@@ -216,7 +230,7 @@ export function FactLedger({ facts, programmes }: { facts: FactT[]; programmes: 
                   setStatus("");
                   setQ("");
                 }}
-                className="h-8 rounded-md px-2.5 text-[13px] text-muted hover:bg-sunken hover:text-ink"
+                className="h-10 rounded-md px-2.5 text-[13px] text-muted sm:h-8 hover:bg-sunken hover:text-ink"
               >
                 Clear
               </button>
@@ -225,7 +239,7 @@ export function FactLedger({ facts, programmes }: { facts: FactT[]; programmes: 
               type="button"
               onClick={exportCsv}
               disabled={!shown.length}
-              className="inline-flex h-8 items-center gap-1.5 rounded-md border border-line-strong bg-surface px-3 text-[13px] font-medium text-ink hover:bg-sunken disabled:cursor-not-allowed disabled:opacity-40"
+              className="inline-flex h-10 items-center gap-1.5 rounded-md border border-line-strong sm:h-8 bg-surface px-3 text-[13px] font-medium text-ink hover:bg-sunken disabled:cursor-not-allowed disabled:opacity-40"
             >
               <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden fill="none" stroke="currentColor" strokeWidth="1.6">
                 <path d="M8 2.5v8M4.5 7 8 10.5 11.5 7M3 13.5h10" strokeLinecap="round" strokeLinejoin="round" />
@@ -243,7 +257,62 @@ export function FactLedger({ facts, programmes }: { facts: FactT[]; programmes: 
         <span className="hidden sm:inline">Competing sources for one metric are listed as separate rows, best source first.</span>
       </div>
 
-      <div className="mt-2 overflow-x-auto">
+      <div className="mt-2 sm:hidden">
+        {shown.map((r, i) => {
+          const newGroup = i === 0 || shown[i - 1].moduleLabel !== r.moduleLabel;
+          const sameMetric =
+            i > 0 && shown[i - 1].f.metricKey === r.f.metricKey && shown[i - 1].f.period === r.f.period && !newGroup;
+          return (
+            <Fragment key={r.f.id}>
+              {newGroup ? (
+                <div className="border-b border-line pb-1.5 pt-6 font-mono text-[11px] uppercase tracking-[0.08em] text-faint">
+                  {r.moduleLabel}
+                  <span className="ml-2 tnum">{groupSize.get(r.moduleLabel)}</span>
+                </div>
+              ) : null}
+              <div className="border-b border-line py-2.5 text-[13px]">
+                <div className="flex items-baseline justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className={sameMetric ? "text-muted" : "text-ink"}>{r.label}</div>
+                    <div className="font-mono text-[11px] text-faint">
+                      {r.f.period}
+                      {r.f.programmeId ? <span className="font-sans text-[11.5px] text-muted"> · {r.programme}</span> : null}
+                    </div>
+                  </div>
+                  <div data-evidence={r.f.status} className="tnum shrink-0 text-right font-medium">
+                    {r.f.status === "UNAVAILABLE" ? <span className="font-normal text-muted">{r.value}</span> : r.value}
+                  </div>
+                </div>
+                <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[12px] text-muted">
+                  <span className={`inline-flex items-center gap-1.5 ${STATUS_TONE[r.f.status]}`}>
+                    <StatusMark status={r.f.status} />
+                    {STATUS_LABEL[r.f.status]}
+                  </span>
+                  <span>· {SOURCE_LABEL[r.f.sourceType]}</span>
+                  <span className="font-mono text-[11px]">· {fmtDate(r.f.asOfDate)}</span>
+                </div>
+                <div className="mt-0.5 break-words text-[12px] text-muted">
+                  {r.f.sourceUrl ? (
+                    <a href={r.f.sourceUrl} target="_blank" rel="noreferrer" className="text-brand hover:underline">
+                      {r.f.sourceName}
+                    </a>
+                  ) : (
+                    r.f.sourceName
+                  )}
+                </div>
+                {r.f.note ? <div className="mt-0.5 text-[12px] leading-snug text-faint">{r.f.note}</div> : null}
+              </div>
+            </Fragment>
+          );
+        })}
+        {!shown.length ? (
+          <div className="border-b border-dashed border-line py-10 text-center text-sm text-muted">
+            {facts.length ? "No facts match these filters" : "No facts recorded for this institution"}
+          </div>
+        ) : null}
+      </div>
+
+      <div className="mt-2 hidden overflow-x-auto sm:block">
         <table className="w-full border-collapse text-[13px]">
           <thead>
             <tr className="text-left text-[12px] text-muted">

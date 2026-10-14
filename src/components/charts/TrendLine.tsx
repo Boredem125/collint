@@ -5,7 +5,9 @@ import { STATUS_LABEL, type Unit } from "@/lib/metrics";
 import { fmtNum } from "@/lib/facts";
 import { useTrustLens } from "@/components/evidence/TrustLens";
 
-const W = 600;
+// Desktop draws at 600 units; phones get a narrow canvas so labels stay at ~10px rendered.
+const WIDE = 600;
+const NARROW = 340;
 const PAD = { l: 18, r: 18, t: 24, b: 26 };
 
 export const STATUS_FILL: Record<FactStatus, string> = {
@@ -25,6 +27,34 @@ export function TrendLine({
   height?: number;
 }) {
   const { on } = useTrustLens();
+  if (!points.some((p) => p.value !== null)) {
+    return <div className="py-6 text-center text-sm text-muted">Not available</div>;
+  }
+  return (
+    <>
+      <div className="hidden sm:block">
+        <Plot points={points} unit={unit} height={height} on={on} W={WIDE} />
+      </div>
+      <div className="sm:hidden">
+        <Plot points={points} unit={unit} height={height} on={on} W={NARROW} />
+      </div>
+    </>
+  );
+}
+
+function Plot({
+  points,
+  unit,
+  height,
+  on,
+  W,
+}: {
+  points: { label: string; value: number | null; status?: FactStatus }[];
+  unit: Unit;
+  height: number;
+  on: boolean;
+  W: number;
+}) {
   const vals = points.map((p) => p.value).filter((v): v is number => v !== null);
   if (vals.length === 0) {
     return <div className="py-6 text-center text-sm text-muted">Not available</div>;
@@ -78,6 +108,9 @@ export function TrendLine({
     .map((p) => `${p.label}: ${p.value === null ? "not available" : fmtNum(p.value, unit)}`)
     .join("; ");
   const base = PAD.t + innerH;
+  // Thin the axis labels when points sit closer than a label is wide.
+  const every = step > 0 ? Math.max(1, Math.ceil(52 / step)) : 1;
+  const axis = (i: number) => i === points.length - 1 || (i % every === 0 && points.length - 1 - i >= every);
 
   return (
     <svg viewBox={`0 0 ${W} ${height}`} role="img" aria-label={`Trend. ${summary}`} className="block h-auto w-full">
@@ -95,9 +128,11 @@ export function TrendLine({
       ))}
       {points.map((p, i) => (
         <g key={`${p.label}-${i}`}>
-          <text x={x(i)} y={height - 6} textAnchor="middle" fontSize="10.5" className="fill-faint font-mono">
-            {p.label}
-          </text>
+          {axis(i) ? (
+            <text x={x(i)} y={height - 6} textAnchor="middle" fontSize="10.5" className="fill-faint font-mono">
+              {p.label}
+            </text>
+          ) : null}
           {p.value === null ? (
             <text x={x(i)} y={PAD.t + innerH / 2} textAnchor="middle" fontSize="10" className="fill-faint font-mono">
               Not available

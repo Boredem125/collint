@@ -20,7 +20,7 @@ export default async function GapsPage({ params }: { params: Promise<{ id: strin
     <div className="space-y-10">
       <header>
         <Kicker>Evidence gaps</Kicker>
-        <h2 className="display mt-2 max-w-3xl text-[26px] font-medium leading-snug text-ink">
+        <h2 className="display mt-2 max-w-3xl text-[21px] font-medium leading-snug text-ink sm:text-[26px]">
           {gapVerdict(gaps)}
           {c.total ? `, across ${groups.length} ${groups.length === 1 ? "source" : "sources"} to request from.` : ""}
         </h2>

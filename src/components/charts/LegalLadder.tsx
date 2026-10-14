@@ -74,8 +74,8 @@ export function LegalLadder({ records, promoters }: { records: LegalRecordT[]; p
               const last = i === CRIMINAL_LADDER.length - 1;
               const nextIsOutcome = CRIMINAL_LADDER[i + 1] === "ACQUITTAL";
               return (
-                <li key={stage} className="grid grid-cols-[5.5rem_1.25rem_minmax(0,1fr)] gap-x-3 sm:grid-cols-[7rem_1.25rem_minmax(0,1fr)]">
-                  <div className="pb-7 pt-0.5 text-right">
+                <li key={stage} className="grid grid-cols-[1.25rem_minmax(0,1fr)] gap-x-3 sm:grid-cols-[7rem_1.25rem_minmax(0,1fr)]">
+                  <div className="hidden pb-7 pt-0.5 text-right sm:block">
                     <div className={`display text-[16px] leading-tight ${rows.length ? "text-ink" : "text-faint"}`}>
                       {LEGAL_STAGE_LABEL[stage]}
                     </div>
@@ -94,10 +94,18 @@ export function LegalLadder({ records, promoters }: { records: LegalRecordT[]; p
                     <Node filled={rows.length > 0} />
                   </div>
                   <div className="min-w-0 pb-7">
+                    <div className="mb-2 sm:hidden">
+                      <span className={`display text-[16px] leading-tight ${rows.length ? "text-ink" : "text-faint"}`}>
+                        {LEGAL_STAGE_LABEL[stage]}
+                      </span>
+                      {stage === "ACQUITTAL" ? (
+                        <span className="ml-2 text-[11px] text-faint">An outcome, not a step</span>
+                      ) : null}
+                    </div>
                     {rows.length ? (
                       <Entries records={rows} promoters={promoters} />
                     ) : (
-                      <span className="block pt-1 text-[12.5px] text-faint">None in sources checked</span>
+                      <span className="block text-[12.5px] text-faint sm:pt-1">None in sources checked</span>
                     )}
                   </div>
                 </li>
