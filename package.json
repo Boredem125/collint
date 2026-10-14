@@ -5,11 +5,13 @@
   "scripts": {
     "db": "node scripts/db.mjs",
     "dev": "next dev --turbopack",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "test": "vitest run",
     "db:push": "prisma db push",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts",
+    "postinstall": "prisma generate",
+    "db:deploy": "prisma db push && tsx prisma/seed.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",

@@ -40,3 +40,16 @@ Tests: `npm test`.
 - `src/lib/risk.ts` — rule-driven flags. No overall score is computed.
 - `src/lib/import/` — Excel/CSV template, parser, validation, commit, rollback.
 - `src/components/evidence/` — evidence chip, Trust lens, claim-vs-verified, coverage meter.
+
+## Deploy to Vercel
+
+The app needs a hosted Postgres; the local `npm run db` server does not exist on Vercel.
+
+1. In the Vercel project, open **Storage → Create Database → Neon (Postgres)** and connect it to the project. This sets `DATABASE_URL` (if the integration names it differently, add `DATABASE_URL` yourself with the pooled connection string).
+2. Create the tables and load the sample data once, from your machine, against that database:
+
+```bash
+DATABASE_URL="<neon connection string>" npm run db:deploy
+```
+
+3. Redeploy. `postinstall` and `build` run `prisma generate`, so the Prisma client is built on Vercel.
