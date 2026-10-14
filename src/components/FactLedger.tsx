@@ -1,10 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import type { FactStatus, FactT, ProgrammeT, SourceType } from "@/lib/types";
 import { MODULES, SOURCE_LABEL, SOURCE_PRECEDENCE, STATUS_LABEL, metric, type ModuleKey } from "@/lib/metrics";
 import { fmtDate, fmtFact } from "@/lib/facts";
-import { SourceBadge, StatusBadge } from "@/components/evidence/Evidence";
 
 const STATUSES: FactStatus[] = ["VERIFIED", "SELF_REPORTED", "NEEDS_VALIDATION", "UNAVAILABLE"];
 
@@ -15,13 +14,23 @@ const STATUS_TONE: Record<FactStatus, string> = {
   UNAVAILABLE: "text-unavailable",
 };
 
+// Same shapes as the evidence chip, so status never relies on colour alone.
+export function StatusMark({ status }: { status: FactStatus }) {
+  const base = "inline-block h-2 w-2 shrink-0";
+  if (status === "VERIFIED") return <span aria-hidden className={`${base} rounded-full bg-verified`} />;
+  if (status === "SELF_REPORTED") return <span aria-hidden className={`${base} rounded-full border-2 border-selfreported`} />;
+  if (status === "NEEDS_VALIDATION") return <span aria-hidden className={`${base} rotate-45 bg-validate`} />;
+  return <span aria-hidden className={`${base} rounded-full border border-dashed border-muted`} />;
+}
+
 // Quote every cell; neutralise leading characters a spreadsheet would run as a formula.
 const csvCell = (v: string) => {
   const safe = /^[=+@]|^-(?!\d)/.test(v) ? `'${v}` : v;
   return `"${safe.replace(/"/g, '""')}"`;
 };
 
-const selectCls = "rounded border border-line bg-surface px-2 py-1.5 text-sm";
+const control =
+  "h-8 rounded-md border border-line bg-surface px-2 text-[13px] text-ink outline-none hover:border-line-strong focus-visible:border-line-strong";
 
 export function FactLedger({ facts, programmes }: { facts: FactT[]; programmes: ProgrammeT[] }) {
   const [module, setModule] = useState<ModuleKey | "">("");
@@ -36,39 +45,56 @@ export function FactLedger({ facts, programmes }: { facts: FactT[]; programmes: 
       facts
         .map((f) => {
           const def = metric(f.metricKey);
+          const modIdx = MODULES.findIndex((m) => m.key === def?.module);
           return {
             f,
             label: def?.label ?? f.metricKey,
             module: def?.module,
-            moduleLabel: MODULES.find((m) => m.key === def?.module)?.label ?? "Other",
+            modIdx: modIdx < 0 ? MODULES.length : modIdx,
+            moduleLabel: MODULES[modIdx]?.label ?? "Other",
             programme: f.programmeId ? (progName.get(f.programmeId) ?? "Unknown programme") : "Institution",
             value: fmtFact(f),
           };
         })
         .sort(
           (a, b) =>
-            a.moduleLabel.localeCompare(b.moduleLabel) ||
+            a.modIdx - b.modIdx ||
             a.label.localeCompare(b.label) ||
             b.f.period.localeCompare(a.f.period) ||
-            a.programme.localeCompare(b.programme),
+            a.programme.localeCompare(b.programme) ||
+            SOURCE_PRECEDENCE.indexOf(a.f.sourceType) - SOURCE_PRECEDENCE.indexOf(b.f.sourceType),
         ),
     [facts, progName],
   );
 
-  const shown = useMemo(() => {
+  // Everything except the status filter, so the segment counts answer "how many of these are verified".
+  const scoped = useMemo(() => {
     const needle = q.trim().toLowerCase();
     return rows.filter(
       (r) =>
         (!module || r.module === module) &&
         (!source || r.f.sourceType === source) &&
-        (!status || r.f.status === status) &&
         (!needle ||
           [r.label, r.f.metricKey, r.f.period, r.programme, r.value, r.f.sourceName, r.f.note ?? ""]
             .join(" ")
             .toLowerCase()
             .includes(needle)),
     );
-  }, [rows, module, source, status, q]);
+  }, [rows, module, source, q]);
+
+  const shown = useMemo(() => (status ? scoped.filter((r) => r.f.status === status) : scoped), [scoped, status]);
+
+  const groupSize = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const r of shown) m.set(r.moduleLabel, (m.get(r.moduleLabel) ?? 0) + 1);
+    return m;
+  }, [shown]);
+
+  const counts = useMemo(() => {
+    const c = { VERIFIED: 0, SELF_REPORTED: 0, NEEDS_VALIDATION: 0, UNAVAILABLE: 0 } as Record<FactStatus, number>;
+    for (const r of scoped) c[r.f.status]++;
+    return c;
+  }, [scoped]);
 
   const exportCsv = () => {
     const head = [
@@ -116,31 +142,42 @@ export function FactLedger({ facts, programmes }: { facts: FactT[]; programmes: 
   };
 
   const filtered = !!(module || source || status || q.trim());
+  const segments: { key: FactStatus | ""; label: string; n: number }[] = [
+    { key: "", label: "All", n: scoped.length },
+    ...STATUSES.map((s) => ({ key: s, label: STATUS_LABEL[s], n: counts[s] })),
+  ];
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        {STATUSES.map((s) => (
-          <button
-            key={s}
-            type="button"
-            onClick={() => setStatus(status === s ? "" : s)}
-            aria-pressed={status === s}
-            className={`rounded-lg border bg-surface p-3 text-left ${status === s ? "border-brand" : "border-line"}`}
-          >
-            <div className="text-[11px] font-medium uppercase tracking-wide text-muted">{STATUS_LABEL[s]}</div>
-            <div className={`mt-1 text-2xl font-semibold tnum ${STATUS_TONE[s]}`}>
-              {facts.filter((f) => f.status === s).length}
-            </div>
-            <div className="text-xs text-muted">facts recorded</div>
-          </button>
-        ))}
-      </div>
+    <div>
+      <div className="no-print sticky top-14 z-20 -mx-1 border-b border-line bg-canvas/95 px-1 py-3 backdrop-blur">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <div role="group" aria-label="Filter by status" className="flex flex-wrap rounded-md border border-line bg-surface p-0.5">
+            {segments.map((s) => {
+              const active = status === s.key;
+              return (
+                <button
+                  key={s.key || "all"}
+                  type="button"
+                  onClick={() => setStatus(s.key)}
+                  aria-pressed={active}
+                  className={`flex h-7 items-center gap-1.5 rounded-[5px] px-2.5 text-[12.5px] transition-colors ${
+                    active ? "bg-ink text-canvas" : "text-muted hover:bg-sunken hover:text-ink"
+                  }`}
+                >
+                  {s.key ? <StatusMark status={s.key} /> : null}
+                  {s.label}
+                  <span className={`tnum font-mono text-[11px] ${active ? "opacity-70" : "text-faint"}`}>{s.n}</span>
+                </button>
+              );
+            })}
+          </div>
 
-      <div className="flex flex-wrap items-end gap-3 rounded-lg border border-line bg-surface p-3">
-        <label className="flex flex-col gap-1 text-xs text-muted">
-          Module
-          <select className={selectCls} value={module} onChange={(e) => setModule(e.target.value as ModuleKey | "")}>
+          <select
+            aria-label="Module"
+            className={control}
+            value={module}
+            onChange={(e) => setModule(e.target.value as ModuleKey | "")}
+          >
             <option value="">All modules</option>
             {MODULES.map((m) => (
               <option key={m.key} value={m.key}>
@@ -148,10 +185,12 @@ export function FactLedger({ facts, programmes }: { facts: FactT[]; programmes: 
               </option>
             ))}
           </select>
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-muted">
-          Source type
-          <select className={selectCls} value={source} onChange={(e) => setSource(e.target.value as SourceType | "")}>
+          <select
+            aria-label="Source type"
+            className={control}
+            value={source}
+            onChange={(e) => setSource(e.target.value as SourceType | "")}
+          >
             <option value="">All sources</option>
             {SOURCE_PRECEDENCE.map((s) => (
               <option key={s} value={s}>
@@ -159,104 +198,131 @@ export function FactLedger({ facts, programmes }: { facts: FactT[]; programmes: 
               </option>
             ))}
           </select>
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-muted">
-          Status
-          <select className={selectCls} value={status} onChange={(e) => setStatus(e.target.value as FactStatus | "")}>
-            <option value="">All statuses</option>
-            {STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {STATUS_LABEL[s]}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex min-w-48 flex-1 flex-col gap-1 text-xs text-muted">
-          Search
           <input
             type="search"
+            aria-label="Search facts"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Metric, source, period, note"
-            className={selectCls}
+            placeholder="Search metric, source, period, note"
+            className={`${control} min-w-48 flex-1 placeholder:text-faint`}
           />
-        </label>
-        {filtered ? (
-          <button
-            type="button"
-            onClick={() => {
-              setModule("");
-              setSource("");
-              setStatus("");
-              setQ("");
-            }}
-            className="rounded border border-line px-3 py-1.5 text-sm text-muted hover:text-ink"
-          >
-            Clear
-          </button>
-        ) : null}
-        <button
-          type="button"
-          onClick={exportCsv}
-          disabled={!shown.length}
-          className="rounded bg-brand px-3 py-1.5 text-sm font-medium text-white disabled:opacity-40"
-        >
-          Export CSV
-        </button>
+          <div className="flex items-center gap-2">
+            {filtered ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setModule("");
+                  setSource("");
+                  setStatus("");
+                  setQ("");
+                }}
+                className="h-8 rounded-md px-2.5 text-[13px] text-muted hover:bg-sunken hover:text-ink"
+              >
+                Clear
+              </button>
+            ) : null}
+            <button
+              type="button"
+              onClick={exportCsv}
+              disabled={!shown.length}
+              className="inline-flex h-8 items-center gap-1.5 rounded-md border border-line-strong bg-surface px-3 text-[13px] font-medium text-ink hover:bg-sunken disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden fill="none" stroke="currentColor" strokeWidth="1.6">
+                <path d="M8 2.5v8M4.5 7 8 10.5 11.5 7M3 13.5h10" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Export CSV
+            </button>
+          </div>
+        </div>
       </div>
 
-      <div className="text-sm text-muted tnum" aria-live="polite">
-        Showing {shown.length} of {facts.length} facts
+      <div className="mt-3 flex items-baseline justify-between text-[12px] text-muted" aria-live="polite">
+        <span className="tnum">
+          {shown.length === facts.length ? `${facts.length} facts` : `${shown.length} of ${facts.length} facts`}
+        </span>
+        <span className="hidden sm:inline">Competing sources for one metric are listed as separate rows, best source first.</span>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-line bg-surface">
-        <table className="w-full text-sm">
-          <thead className="bg-canvas text-left text-[11px] uppercase tracking-wide text-muted">
-            <tr>
-              {["Metric", "Module", "Period", "Programme", "Value", "Source type", "Source name", "As-of date", "Status", "Note"].map(
-                (h) => (
-                  <th key={h} scope="col" className={`whitespace-nowrap px-3 py-2 font-medium ${h === "Value" ? "text-right" : ""}`}>
-                    {h}
-                  </th>
-                ),
-              )}
+      <div className="mt-2 overflow-x-auto">
+        <table className="w-full border-collapse text-[13px]">
+          <thead>
+            <tr className="text-left text-[12px] text-muted">
+              <th scope="col" className="border-b border-line-strong py-2 pr-3 font-normal">Metric</th>
+              <th scope="col" className="border-b border-line-strong px-3 py-2 font-normal">Period</th>
+              <th scope="col" className="border-b border-line-strong px-3 py-2 text-right font-normal">Value</th>
+              <th scope="col" className="border-b border-line-strong px-3 py-2 font-normal">Source</th>
+              <th scope="col" className="border-b border-line-strong px-3 py-2 font-normal">As of</th>
+              <th scope="col" className="border-b border-line-strong px-3 py-2 font-normal">Status</th>
+              <th scope="col" className="border-b border-line-strong py-2 pl-3 font-normal">Note</th>
             </tr>
           </thead>
           <tbody>
-            {shown.map((r) => (
-              <tr key={r.f.id} className="border-t border-line align-top">
-                <td className="px-3 py-2">
-                  <div>{r.label}</div>
-                  <div className="font-mono text-[11px] text-muted">{r.f.metricKey}</div>
-                </td>
-                <td className="whitespace-nowrap px-3 py-2">{r.moduleLabel}</td>
-                <td className="whitespace-nowrap px-3 py-2 tnum">{r.f.period}</td>
-                <td className="px-3 py-2">{r.programme}</td>
-                <td className="whitespace-nowrap px-3 py-2 text-right font-medium tnum" data-evidence={r.f.status}>
-                  {r.f.status === "UNAVAILABLE" ? <span className="font-normal text-muted">{r.value}</span> : r.value}
-                </td>
-                <td className="whitespace-nowrap px-3 py-2">
-                  <SourceBadge type={r.f.sourceType} />
-                </td>
-                <td className="px-3 py-2">
-                  {r.f.sourceUrl ? (
-                    <a href={r.f.sourceUrl} target="_blank" rel="noreferrer" className="text-brand underline">
-                      {r.f.sourceName}
-                    </a>
-                  ) : (
-                    r.f.sourceName
-                  )}
-                </td>
-                <td className="whitespace-nowrap px-3 py-2 tnum">{fmtDate(r.f.asOfDate)}</td>
-                <td className="whitespace-nowrap px-3 py-2">
-                  <StatusBadge status={r.f.status} />
-                </td>
-                <td className="max-w-xs px-3 py-2 text-xs text-muted">{r.f.note ?? ""}</td>
-              </tr>
-            ))}
+            {shown.map((r, i) => {
+              const newGroup = i === 0 || shown[i - 1].moduleLabel !== r.moduleLabel;
+              const sameMetric =
+                i > 0 && shown[i - 1].f.metricKey === r.f.metricKey && shown[i - 1].f.period === r.f.period && !newGroup;
+              return (
+                <Fragment key={r.f.id}>
+                  {newGroup ? (
+                    <tr>
+                      <th
+                        scope="rowgroup"
+                        colSpan={7}
+                        className="border-b border-line pb-1.5 pt-6 text-left font-mono text-[11px] font-normal uppercase tracking-[0.08em] text-faint"
+                      >
+                        {r.moduleLabel}
+                        <span className="ml-2 tnum">{groupSize.get(r.moduleLabel)}</span>
+                      </th>
+                    </tr>
+                  ) : null}
+                  <tr className="align-baseline transition-colors hover:bg-sunken">
+                    <td className="border-b border-line py-2 pr-3">
+                      <div className={sameMetric ? "text-muted" : "text-ink"}>{r.label}</div>
+                      <div className="font-mono text-[10.5px] text-faint">
+                        {r.f.metricKey}
+                        {r.f.programmeId ? <span className="font-sans text-[11.5px] text-muted"> · {r.programme}</span> : null}
+                      </div>
+                    </td>
+                    <td className="whitespace-nowrap border-b border-line px-3 py-2 font-mono text-[12px] text-muted">
+                      {r.f.period}
+                    </td>
+                    <td
+                      data-evidence={r.f.status}
+                      className="tnum whitespace-nowrap border-b border-line px-3 py-2 text-right font-medium"
+                    >
+                      {r.f.status === "UNAVAILABLE" ? <span className="font-normal text-muted">{r.value}</span> : r.value}
+                    </td>
+                    <td className="border-b border-line px-3 py-2">
+                      <div className="text-ink">{SOURCE_LABEL[r.f.sourceType]}</div>
+                      <div className="max-w-[260px] text-[12px] text-muted">
+                        {r.f.sourceUrl ? (
+                          <a href={r.f.sourceUrl} target="_blank" rel="noreferrer" className="text-brand hover:underline">
+                            {r.f.sourceName}
+                          </a>
+                        ) : (
+                          r.f.sourceName
+                        )}
+                      </div>
+                    </td>
+                    <td className="whitespace-nowrap border-b border-line px-3 py-2 font-mono text-[12px] text-muted">
+                      {fmtDate(r.f.asOfDate)}
+                    </td>
+                    <td className="whitespace-nowrap border-b border-line px-3 py-2">
+                      <span className={`inline-flex items-center gap-1.5 text-[12.5px] ${STATUS_TONE[r.f.status]}`}>
+                        <StatusMark status={r.f.status} />
+                        {STATUS_LABEL[r.f.status]}
+                      </span>
+                    </td>
+                    <td className="min-w-[180px] max-w-xs border-b border-line py-2 pl-3 text-[12px] leading-snug text-muted">
+                      {r.f.note ?? ""}
+                    </td>
+                  </tr>
+                </Fragment>
+              );
+            })}
             {!shown.length ? (
               <tr>
-                <td colSpan={10} className="px-3 py-8 text-center text-muted">
+                <td colSpan={7} className="border-b border-dashed border-line py-10 text-center text-sm text-muted">
                   {facts.length ? "No facts match these filters" : "No facts recorded for this institution"}
                 </td>
               </tr>

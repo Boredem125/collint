@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { PageHeader } from "@/components/ui";
+import { Kicker } from "@/components/ui";
 import ImportClient, { type BatchT } from "@/components/ImportClient";
 
 export const dynamic = "force-dynamic";
@@ -20,12 +20,12 @@ export default async function ImportPage() {
   }));
 
   return (
-    <>
-      <PageHeader
-        title="Import data"
-        subtitle="Excel or CSV. Every row is checked for source, date and status before anything is written."
-      />
+    <div className="max-w-5xl">
+      <Kicker>Import</Kicker>
+      <h1 className="display mt-2 max-w-3xl text-[28px] font-medium leading-[1.15] text-ink sm:text-[32px]">
+        Bring in a spreadsheet. Every row is checked for source, date and status before anything is written.
+      </h1>
       <ImportClient batches={batches} />
-    </>
+    </div>
   );
 }

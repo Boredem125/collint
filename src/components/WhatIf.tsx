@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { fmtNum } from "@/lib/facts";
 
 interface Props {
@@ -8,6 +8,20 @@ interface Props {
   currentAdmissions: number | null;
   averageFee: number | null;
 }
+
+const RANGE_CSS = `
+.wi-range{-webkit-appearance:none;appearance:none;display:block;width:100%;height:22px;background:transparent;cursor:pointer;margin:0}
+.wi-range:focus{outline:none}
+.wi-range::-webkit-slider-runnable-track{height:2px;border-radius:1px;background:linear-gradient(to right,var(--ink) 0 var(--p),var(--line-strong) var(--p) 100%)}
+.wi-range::-moz-range-track{height:2px;border-radius:1px;background:var(--line-strong)}
+.wi-range::-moz-range-progress{height:2px;border-radius:1px;background:var(--ink)}
+.wi-range::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:18px;height:18px;margin-top:-8px;border-radius:50%;background:var(--surface);border:2px solid var(--ink);transition:transform .12s}
+.wi-range::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--surface);border:2px solid var(--ink)}
+.wi-range:active::-webkit-slider-thumb{transform:scale(1.15)}
+.wi-range:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 4px color-mix(in oklab,var(--brand) 30%,transparent)}
+.wi-range:focus-visible::-moz-range-thumb{box-shadow:0 0 0 4px color-mix(in oklab,var(--brand) 30%,transparent)}
+.wi-range:disabled{cursor:not-allowed;opacity:.4}
+`;
 
 export function WhatIf({ intake, currentAdmissions, averageFee }: Props) {
   const ready = !!intake && intake > 0 && currentAdmissions != null && !!averageFee && averageFee > 0;
@@ -17,18 +31,24 @@ export function WhatIf({ intake, currentAdmissions, averageFee }: Props) {
   const [feeShift, setFeeShift] = useState(0);
 
   return (
-    <section className="rounded-lg border-2 border-dashed border-attention/50 bg-attention/5 p-4">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-attention">Scenario — not data</h3>
-        <p className="text-xs text-muted">
-          Figures below are arithmetic on the slider positions. They are not sourced, dated or verified.
-        </p>
-      </div>
+    <section
+      aria-label="Scenario calculator"
+      className="relative rounded-md border border-dashed border-line-strong bg-surface"
+    >
+      <style href="whatif-range" precedence="default">
+        {RANGE_CSS}
+      </style>
+      <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-dashed border-line-strong px-5 py-2.5 sm:px-6">
+        <span className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.08em] text-attention">
+          <span aria-hidden className="h-1.5 w-1.5 rotate-45 bg-attention" />
+          Scenario — not data
+        </span>
+        <span className="text-[12px] text-muted">Arithmetic on the slider positions. Not sourced or verified.</span>
+      </header>
 
       {!ready ? (
-        <p className="mt-3 text-sm text-muted">
-          Not available. The scenario needs approved intake, admissions and average fee for the latest year; add those
-          facts through an import to enable it.
+        <p className="px-5 py-8 text-sm text-muted sm:px-6">
+          Not available. Needs approved intake, admissions and average fee for the latest year.
         </p>
       ) : (
         <Body
@@ -43,6 +63,55 @@ export function WhatIf({ intake, currentAdmissions, averageFee }: Props) {
         />
       )}
     </section>
+  );
+}
+
+function Slider({
+  id,
+  label,
+  value,
+  display,
+  min,
+  max,
+  onChange,
+  disabled,
+  ticks,
+}: {
+  id: string;
+  label: string;
+  value: number;
+  display: string;
+  min: number;
+  max: number;
+  onChange: (n: number) => void;
+  disabled?: boolean;
+  ticks: [string, string, string?];
+}) {
+  const p = max > min ? ((value - min) / (max - min)) * 100 : 100;
+  return (
+    <div>
+      <label htmlFor={id} className="flex items-baseline justify-between gap-3">
+        <span className="text-[13px] text-muted">{label}</span>
+        <span className="display tnum text-[22px] leading-none text-ink">{display}</span>
+      </label>
+      <input
+        id={id}
+        type="range"
+        min={min}
+        max={max}
+        step={1}
+        value={value}
+        disabled={disabled}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className="wi-range mt-3"
+        style={{ "--p": `${p}%` } as CSSProperties}
+      />
+      <div className="tnum mt-1.5 flex justify-between font-mono text-[11px] text-faint">
+        <span>{ticks[0]}</span>
+        {ticks[2] !== undefined ? <span>{ticks[1]}</span> : null}
+        <span>{ticks[2] ?? ticks[1]}</span>
+      </div>
+    </div>
   );
 }
 
@@ -61,90 +130,79 @@ function Body(p: {
   const incremental = Math.max(0, admissions - p.currentAdmissions);
   const fee = p.averageFee * (1 + p.feeShift / 100);
   const gross = admissions * fee;
+  const baseline = p.currentAdmissions * p.averageFee;
+  const delta = gross - baseline;
   const full = p.currentFill >= 100;
+  const moved = p.fill !== p.currentFill || p.feeShift !== 0;
 
   return (
-    <div className="mt-4 grid gap-6 md:grid-cols-2">
-      <div className="space-y-5">
+    <div className="grid md:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
+      <div className="space-y-8 px-5 py-6 sm:px-6 md:border-r md:border-dashed md:border-line-strong">
         <div>
-          <label htmlFor="whatif-fill" className="flex justify-between text-sm">
-            <span>Fill rate</span>
-            <span className="tnum font-semibold">{fmtNum(p.fill, "percent")}</span>
-          </label>
-          <input
+          <Slider
             id="whatif-fill"
-            type="range"
+            label="Seats filled"
+            value={p.fill}
+            display={fmtNum(p.fill, "percent")}
             min={p.currentFill}
             max={100}
-            step={1}
-            value={p.fill}
             disabled={full}
-            onChange={(e) => p.setFill(Number(e.target.value))}
-            className="mt-2 w-full accent-attention"
+            onChange={p.setFill}
+            ticks={[`Today ${fmtNum(p.currentFill, "percent")}`, fmtNum(100, "percent")]}
           />
-          <div className="flex justify-between text-xs text-muted tnum">
-            <span>Current {fmtNum(p.currentFill, "percent")}</span>
-            <span>{fmtNum(100, "percent")}</span>
-          </div>
-          {full ? <p className="mt-1 text-xs text-muted">Approved intake is already fully subscribed.</p> : null}
+          {full ? <p className="mt-2 text-xs text-muted">Approved intake is already fully subscribed.</p> : null}
         </div>
-
-        <div>
-          <label htmlFor="whatif-fee" className="flex justify-between text-sm">
-            <span>Average fee</span>
-            <span className="tnum font-semibold">
-              {fmtNum(fee, "inr")} ({p.feeShift > 0 ? "+" : ""}
-              {p.feeShift}%)
-            </span>
-          </label>
-          <input
-            id="whatif-fee"
-            type="range"
-            min={-40}
-            max={40}
-            step={1}
-            value={p.feeShift}
-            onChange={(e) => p.setFeeShift(Number(e.target.value))}
-            className="mt-2 w-full accent-attention"
-          />
-          <div className="flex justify-between text-xs text-muted tnum">
-            <span>{fmtNum(p.averageFee * 0.6, "inr")}</span>
-            <span>Current {fmtNum(p.averageFee, "inr")}</span>
-            <span>{fmtNum(p.averageFee * 1.4, "inr")}</span>
-          </div>
-        </div>
-
+        <Slider
+          id="whatif-fee"
+          label="Average fee"
+          value={p.feeShift}
+          display={`${p.feeShift > 0 ? "+" : p.feeShift < 0 ? "−" : ""}${Math.abs(p.feeShift)}%`}
+          min={-40}
+          max={40}
+          onChange={p.setFeeShift}
+          ticks={[fmtNum(p.averageFee * 0.6, "inr"), `Today ${fmtNum(p.averageFee, "inr")}`, fmtNum(p.averageFee * 1.4, "inr")]}
+        />
         <button
           type="button"
+          disabled={!moved}
           onClick={() => {
             p.setFill(p.currentFill);
             p.setFeeShift(0);
           }}
-          className="rounded border border-line bg-surface px-3 py-1 text-xs text-muted hover:text-ink"
+          className="text-[13px] text-muted underline decoration-line-strong underline-offset-4 hover:text-ink disabled:cursor-default disabled:no-underline disabled:opacity-50"
         >
-          Reset to current
+          Reset to today
         </button>
       </div>
 
-      <dl className="grid grid-cols-1 gap-3 self-start" aria-live="polite">
-        <Out label="Scenario admissions" value={fmtNum(admissions, "count")} hint={`of ${fmtNum(p.intake, "count")} approved seats`} />
-        <Out label="Incremental admissions" value={`+${fmtNum(incremental, "count")}`} hint="over the latest recorded year" />
-        <Out
-          label="Potential gross revenue (scenario)"
-          value={fmtNum(gross, "inr")}
-          hint={`${fmtNum(admissions, "count")} × ${fmtNum(fee, "inr")}`}
-        />
-      </dl>
-    </div>
-  );
-}
-
-function Out({ label, value, hint }: { label: string; value: string; hint: string }) {
-  return (
-    <div className="rounded-lg border border-line bg-surface p-3">
-      <dt className="text-[11px] font-medium uppercase tracking-wide text-muted">{label}</dt>
-      <dd className="mt-1 text-xl font-semibold tnum">{value}</dd>
-      <div className="text-xs text-muted tnum">{hint}</div>
+      <div className="flex flex-col justify-between gap-8 px-5 py-6 sm:px-6" aria-live="polite">
+        <div>
+          <div className="text-[13px] text-muted">Gross fee revenue, scenario</div>
+          <div className="display tnum mt-2 text-[52px] leading-none text-ink sm:text-[64px]">{fmtNum(gross, "inr")}</div>
+          <div className="tnum mt-3 font-mono text-[12px] text-muted">
+            {fmtNum(admissions, "count")} admissions × {fmtNum(fee, "inr")}
+          </div>
+        </div>
+        <dl className="grid grid-cols-2 border-t border-line pt-4">
+          <div className="pr-4">
+            <dt className="text-[12px] text-muted">Change vs today</dt>
+            <dd className="display tnum mt-1 text-[24px] leading-tight text-ink">
+              {delta > 0 ? "+" : delta < 0 ? "−" : ""}
+              {fmtNum(Math.abs(delta), "inr")}
+            </dd>
+            <dd className="tnum mt-0.5 text-[12px] text-muted">from {fmtNum(baseline, "inr")} today</dd>
+          </div>
+          <div className="border-l border-line pl-4">
+            <dt className="text-[12px] text-muted">Extra admissions</dt>
+            <dd className="display tnum mt-1 text-[24px] leading-tight text-ink">
+              +{fmtNum(incremental, "count")}
+            </dd>
+            <dd className="tnum mt-0.5 text-[12px] text-muted">
+              {fmtNum(admissions, "count")} of {fmtNum(p.intake, "count")} seats
+            </dd>
+          </div>
+        </dl>
+      </div>
     </div>
   );
 }

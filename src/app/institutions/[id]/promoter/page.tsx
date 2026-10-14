@@ -1,8 +1,9 @@
 import { notFound } from "next/navigation";
 import { getProfile } from "@/lib/data";
 import { fmtDate } from "@/lib/facts";
-import type { PromoterEntityT, PromoterT } from "@/lib/types";
-import { Card, Empty, Label, PageHeader, Td, Th } from "@/components/ui";
+import { CRIMINAL_LADDER, OTHER_TRACKS } from "@/lib/metrics";
+import type { LegalRecordT, LegalStage, PromoterEntityT, PromoterT } from "@/lib/types";
+import { Empty, Kicker, Section, Td, Th } from "@/components/ui";
 import { LegalLadder } from "@/components/charts/LegalLadder";
 
 const KIND_LABEL: Record<string, string> = {
@@ -12,44 +13,70 @@ const KIND_LABEL: Record<string, string> = {
   COMPANY: "Company",
 };
 
-function Source({ name, url, date }: { name: string; url?: string | null; date: string }) {
+// Singular and plural phrasing per stage, so the summary names each stage on its own terms.
+const STAGE_PHRASE: Record<LegalStage, [string, string]> = {
+  COMPLAINT: ["a complaint", "complaints"],
+  FIR: ["an FIR", "FIRs"],
+  CHARGE: ["a charge", "charges"],
+  PROSECUTION: ["a prosecution", "prosecutions"],
+  CONVICTION: ["a conviction", "convictions"],
+  ACQUITTAL: ["an acquittal", "acquittals"],
+  CIVIL_DISPUTE: ["a civil dispute", "civil disputes"],
+  REGULATORY_ACTION: ["a regulatory action", "regulatory actions"],
+  INSOLVENCY: ["an insolvency proceeding", "insolvency proceedings"],
+};
+
+const WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"];
+
+function stageList(legal: LegalRecordT[]): string | null {
+  const parts = [...CRIMINAL_LADDER, ...OTHER_TRACKS].flatMap((stage) => {
+    const n = legal.filter((r) => r.stage === stage).length;
+    if (!n) return [];
+    const [one, many] = STAGE_PHRASE[stage];
+    return [n === 1 ? one : `${WORDS[n] ?? n} ${many}`];
+  });
+  if (!parts.length) return null;
+  return parts.length === 1 ? parts[0] : `${parts.slice(0, -1).join(", ")} and ${parts.at(-1)}`;
+}
+
+function SourceLine({ name, url, date }: { name: string; url?: string | null; date: string }) {
   return (
-    <span className="text-xs text-muted">
+    <span className="text-[12px] text-faint">
       {url ? (
-        <a href={url} target="_blank" rel="noreferrer" className="text-brand underline">
+        <a href={url} target="_blank" rel="noreferrer" className="text-brand hover:underline">
           {name}
         </a>
       ) : (
         name
       )}
       {" · as of "}
-      {fmtDate(date)}
+      <span className="tnum">{fmtDate(date)}</span>
     </span>
   );
 }
 
-function EntityTable({ rows }: { rows: { entity: PromoterEntityT; owner: PromoterT }[] }) {
-  if (!rows.length) return <Empty>No related entities found in the sources checked</Empty>;
+function EntityTable({ rows, empty }: { rows: { entity: PromoterEntityT; owner: PromoterT }[]; empty: string }) {
+  if (!rows.length) return <Empty>{empty}</Empty>;
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-sm">
+      <table className="w-full">
         <thead>
           <tr>
             <Th>Entity</Th>
             <Th>Linked to</Th>
             <Th>Relationship</Th>
-            <Th>Source</Th>
-            <Th>As of</Th>
+            <Th className="hidden md:table-cell">Source</Th>
           </tr>
         </thead>
         <tbody>
           {rows.map(({ entity, owner }) => (
-            <tr key={entity.id} className="border-t border-line">
+            <tr key={entity.id}>
               <Td>{entity.name}</Td>
-              <Td>{owner.name}</Td>
-              <Td>{entity.relationship}</Td>
-              <Td>{entity.sourceName}</Td>
-              <Td>{fmtDate(entity.asOfDate)}</Td>
+              <Td className="text-muted">{owner.name}</Td>
+              <Td className="text-muted">{entity.relationship}</Td>
+              <Td className="hidden md:table-cell">
+                <SourceLine name={entity.sourceName} date={entity.asOfDate} />
+              </Td>
             </tr>
           ))}
         </tbody>
@@ -70,103 +97,99 @@ export default async function PromoterPage({ params }: { params: Promise<{ id: s
   const institutions = entities.filter((e) => e.entity.kind === "INSTITUTION");
   const businesses = entities.filter((e) => e.entity.kind !== "INSTITUTION");
 
+  const controller = bodies[0]?.name ?? people[0]?.name;
+  const stages = stageList(legal);
+
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Owner / Promoter due diligence"
-        subtitle="Who controls the institution, what else they run, and what public records say"
-      />
+    <div className="space-y-14">
+      <header>
+        <Kicker>Owner and promoter</Kicker>
+        <p className="display mt-3 max-w-3xl text-[26px] leading-[1.25] text-ink sm:text-[30px]">
+          {controller ? `${controller} controls the college` : "No controlling body is on record"}
+          {stages ? (
+            <>
+              ; public records show {stages}
+              {legal.length > 1 ? <span className="text-muted">, each at its own stage</span> : null}.
+            </>
+          ) : (
+            <span className="text-muted">; no legal records were found in the sources checked.</span>
+          )}
+        </p>
+        <p className="mt-3 text-[12.5px] text-muted">Reported separately. Nothing here feeds a college metric.</p>
+      </header>
 
-      <div className="rounded-lg border border-brand/30 bg-brand/5 px-4 py-3 text-sm text-ink">
-        <strong className="font-semibold">Promoter diligence is reported separately and does not feed any college metric.</strong>{" "}
-        Nothing on this page changes admissions, placement, accreditation, campus or commercial figures.
-      </div>
-
-      <Card title="Trust / society">
+      <Section index="01" title="Controlling body">
         {bodies.length ? (
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-x-10 gap-y-8 md:grid-cols-2">
             {bodies.map((b) => (
-              <div key={b.id} className="rounded-lg border border-line p-4">
-                <div className="text-base font-semibold text-ink">{b.name}</div>
-                <dl className="mt-3 grid grid-cols-2 gap-3 text-sm">
-                  <div>
-                    <Label>Kind</Label>
-                    <dd>{KIND_LABEL[b.kind] ?? b.kind}</dd>
-                  </div>
-                  <div>
-                    <Label>Established</Label>
-                    <dd className="tnum">
-                      {b.established ?? <span className="text-muted">Not available</span>}
-                    </dd>
-                  </div>
-                  <div className="col-span-2">
-                    <Label>Role</Label>
-                    <dd>{b.role}</dd>
-                  </div>
-                </dl>
-                <div className="mt-3 border-t border-line pt-2">
-                  <Source name={b.sourceName} url={b.sourceUrl} date={b.asOfDate} />
+              <div key={b.id}>
+                <div className="display text-[22px] leading-snug text-ink">{b.name}</div>
+                <div className="mt-1.5 text-[13.5px] text-muted">
+                  {KIND_LABEL[b.kind] ?? b.kind}
+                  <span className="text-faint"> · </span>
+                  {b.established ? (
+                    <span className="tnum">Est. {b.established}</span>
+                  ) : (
+                    <span>Established: not available</span>
+                  )}
+                </div>
+                <p className="mt-2 text-[14px] leading-relaxed text-ink">{b.role}</p>
+                <div className="mt-2">
+                  <SourceLine name={b.sourceName} url={b.sourceUrl} date={b.asOfDate} />
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <Empty>Not available — no trust or society record in the sources checked</Empty>
+          <Empty>Not available: no trust or society record in the sources checked</Empty>
         )}
-      </Card>
+      </Section>
 
-      <Card title="People">
+      <Section index="02" title="People">
         {people.length ? (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full">
               <thead>
                 <tr>
                   <Th>Name</Th>
                   <Th>Role</Th>
-                  <Th>Source</Th>
-                  <Th>As of</Th>
+                  <Th className="hidden md:table-cell">Source</Th>
                 </tr>
               </thead>
               <tbody>
                 {people.map((p) => (
-                  <tr key={p.id} className="border-t border-line">
-                    <Td>{p.name}</Td>
-                    <Td>{p.role}</Td>
-                    <Td>
-                      {p.sourceUrl ? (
-                        <a href={p.sourceUrl} target="_blank" rel="noreferrer" className="text-brand underline">
-                          {p.sourceName}
-                        </a>
-                      ) : (
-                        p.sourceName
-                      )}
+                  <tr key={p.id}>
+                    <Td className="font-medium">{p.name}</Td>
+                    <Td className="text-muted">{p.role}</Td>
+                    <Td className="hidden md:table-cell">
+                      <SourceLine name={p.sourceName} url={p.sourceUrl} date={p.asOfDate} />
                     </Td>
-                    <Td>{fmtDate(p.asOfDate)}</Td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         ) : (
-          <Empty>Not available — no individuals recorded in the sources checked</Empty>
+          <Empty>Not available: no individuals recorded in the sources checked</Empty>
         )}
-      </Card>
+      </Section>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card title="Other educational institutions">
-          <EntityTable rows={institutions} />
-        </Card>
-        <Card title="Other businesses">
-          <EntityTable rows={businesses} />
-        </Card>
-      </div>
+      <Section index="03" title="Linked entities">
+        <div className="space-y-10">
+          <div>
+            <h3 className="mb-2 text-[12px] text-muted">Other educational institutions</h3>
+            <EntityTable rows={institutions} empty="No related institutions found in the sources checked" />
+          </div>
+          <div>
+            <h3 className="mb-2 text-[12px] text-muted">Other businesses</h3>
+            <EntityTable rows={businesses} empty="No related businesses found in the sources checked" />
+          </div>
+        </div>
+      </Section>
 
-      <Card title="Legal and regulatory records">
-        <p className="mb-4 rounded-lg border border-line bg-canvas px-3 py-2 text-xs text-muted">
-          Only records from cited public sources are shown; absence of a record here is not a finding of no record.
-        </p>
+      <Section index="04" title="Legal and regulatory record">
         <LegalLadder records={legal} promoters={promoters} />
-      </Card>
+      </Section>
     </div>
   );
 }

@@ -12,13 +12,13 @@ export function SeatMap({ rows }: { rows: { label: string; capacity: number; fil
   const per = STEPS.find((s) => largest / s <= MAX_CELLS) ?? Math.ceil(largest / MAX_CELLS);
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-4">
       {rows.map((r, ri) => {
         if (r.capacity <= 0) {
           return (
-            <div key={`${r.label}-${ri}`} className="text-sm">
-              <span className="font-medium text-ink">{r.label}</span>
-              <span className="ml-2 text-xs text-muted">Not available</span>
+            <div key={`${r.label}-${ri}`} className="flex items-baseline justify-between gap-3 text-[13px]">
+              <span className="text-ink">{r.label}</span>
+              <span className="text-xs text-muted">Not available</span>
             </div>
           );
         }
@@ -29,42 +29,36 @@ export function SeatMap({ rows }: { rows: { label: string; capacity: number; fil
         const over = r.filled > r.capacity;
         return (
           <div key={`${r.label}-${ri}`}>
-            <div className="flex flex-wrap items-baseline justify-between gap-2 text-sm">
-              <span className="font-medium text-ink">{r.label}</span>
-              <span className="tnum text-xs text-muted">
-                {r.filled.toLocaleString("en-IN")} of {r.capacity.toLocaleString("en-IN")} seats ·{" "}
-                <span className="font-semibold text-ink">{Math.round(pct)}% filled</span> · {Math.round(100 - pct)}%
-                available
-                {over ? <span className="ml-1 text-attention">· above sanctioned capacity</span> : null}
+            <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
+              <span className="text-[13px] text-ink">{r.label}</span>
+              <span className="tnum font-mono text-[11px] text-faint">
+                {r.filled.toLocaleString("en-IN")} / {r.capacity.toLocaleString("en-IN")} seats{" "}
+                <span className="ml-1 text-ink">{Math.round(pct)}%</span>
+                {over ? <span className="ml-1.5 text-attention">above sanctioned capacity</span> : null}
               </span>
             </div>
             <div
               role="img"
-              aria-label={`${r.label}: ${r.filled} of ${r.capacity} seats filled, ${Math.round(pct)} percent`}
-              className="mt-1 flex flex-wrap gap-[2px]"
+              aria-label={`${r.label}: ${r.filled} of ${r.capacity} seats filled, ${Math.round(pct)} percent, ${Math.round(100 - pct)} percent available`}
+              className="mt-1.5 flex flex-wrap gap-[2px]"
             >
               {Array.from({ length: cells }, (_, i) => (
-                <span
-                  key={i}
-                  className={`h-2.5 w-2.5 rounded-[2px] ${i < on ? "bg-brand" : "border border-line bg-canvas"}`}
-                />
+                <span key={i} className={`h-[7px] w-[7px] rounded-[1px] ${i < on ? "bg-ink" : "bg-line"}`} />
               ))}
             </div>
           </div>
         );
       })}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-line pt-2 text-xs text-muted">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[11px] text-faint">
         <span className="inline-flex items-center gap-1.5">
-          <span aria-hidden className="h-2.5 w-2.5 rounded-[2px] bg-brand" />
+          <span aria-hidden className="h-[7px] w-[7px] rounded-[1px] bg-ink" />
           Filled
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span aria-hidden className="h-2.5 w-2.5 rounded-[2px] border border-line bg-canvas" />
+          <span aria-hidden className="h-[7px] w-[7px] rounded-[1px] bg-line" />
           Available
         </span>
-        <span className="tnum">
-          {per === 1 ? "1 square = 1 seat" : `1 square = ${per} seats (rounded; exact figures are in the row totals)`}
-        </span>
+        <span className="tnum">{per === 1 ? "1 square = 1 seat" : `1 square ≈ ${per} seats`}</span>
       </div>
     </div>
   );

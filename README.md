@@ -1,8 +1,18 @@
-# Institution Intelligence Platform (IIP)
+# Collint
 
-One search, one profile, one executive view for college partnership due diligence. Every number carries its source, date and verification status.
+College intelligence for partnership due diligence. One search, one dossier, one executive view. Every number carries its source, date and verification status.
 
 v1 is a clickable prototype on fictional sample data. There are no live connectors to AISHE, NIRF, NAAC, AICTE or UGC; data enters through Excel/CSV import.
+
+## What it does
+
+- **Pipeline** board of institutions by deal stage (screening, diligence, negotiation, partnered, passed).
+- **Dossier** per institution: overview, admissions, placements, accreditation, campus, commercial (with what-if), promoter and legal records, risks.
+- **Claim vs verified**: a college's own figure and the university/government figure for the same metric sit side by side with the gap.
+- **Evidence gaps**: every missing, unverified or disputed metric, grouped by who to ask, exported as a data-request letter.
+- **Notes & stage**: analyst notes, decisions and stage history.
+- **Source ledger**, printable **executive brief**, **compare**, Excel/CSV **import** with rollback.
+- Verified-only lens, light/dark theme, Ctrl+K command palette.
 
 ## Run
 

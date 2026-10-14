@@ -1,43 +1,131 @@
 @import "tailwindcss";
 
-@theme {
-  --color-ink: #0f172a;
-  --color-muted: #64748b;
-  --color-line: #e2e8f0;
-  --color-surface: #ffffff;
-  --color-canvas: #f6f7f9;
-  --color-brand: #1e3a8a;
-  /* Evidence status */
-  --color-verified: #15803d;
-  --color-selfreported: #b45309;
-  --color-validate: #c2410c;
-  --color-unavailable: #94a3b8;
-  /* Risk bands */
-  --color-critical: #b91c1c;
-  --color-attention: #c2410c;
-  --font-sans: ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+/* Theme tokens live in CSS variables so light and dark swap at runtime. */
+:root {
+  --canvas: #f3f0e8;
+  --surface: #fbfaf6;
+  --sunken: #ece8de;
+  --ink: #1b1a17;
+  --muted: #69645a;
+  --faint: #9a9488;
+  --line: #e1dbcd;
+  --line-strong: #c9c0ad;
+  --brand: #2c40b8;
+  --verified: #2d6a3e;
+  --selfreported: #a8700f;
+  --validate: #bf4f22;
+  --unavailable: #a39d91;
+  --critical: #a3202e;
+  --attention: #bf5a14;
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --canvas: #12110f;
+  --surface: #1a1916;
+  --sunken: #23211d;
+  --ink: #ece7dc;
+  --muted: #a69f92;
+  --faint: #776f63;
+  --line: #2e2b26;
+  --line-strong: #454037;
+  --brand: #9aa8ff;
+  --verified: #6fbf83;
+  --selfreported: #e0a83e;
+  --validate: #f08a5d;
+  --unavailable: #6f695f;
+  --critical: #f0707c;
+  --attention: #f0954f;
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --canvas: #12110f;
+    --surface: #1a1916;
+    --sunken: #23211d;
+    --ink: #ece7dc;
+    --muted: #a69f92;
+    --faint: #776f63;
+    --line: #2e2b26;
+    --line-strong: #454037;
+    --brand: #9aa8ff;
+    --verified: #6fbf83;
+    --selfreported: #e0a83e;
+    --validate: #f08a5d;
+    --unavailable: #6f695f;
+    --critical: #f0707c;
+    --attention: #f0954f;
+    color-scheme: dark;
+  }
+}
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-sunken: var(--sunken);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-brand: var(--brand);
+  --color-verified: var(--verified);
+  --color-selfreported: var(--selfreported);
+  --color-validate: var(--validate);
+  --color-unavailable: var(--unavailable);
+  --color-critical: var(--critical);
+  --color-attention: var(--attention);
+  --font-sans: var(--font-geist), ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  --font-serif: var(--font-newsreader), ui-serif, Georgia, serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "Cascadia Code", monospace;
+}
+
+html {
+  background: var(--canvas);
 }
 
 body {
-  background: var(--color-canvas);
-  color: var(--color-ink);
+  background: var(--canvas);
+  color: var(--ink);
   font-family: var(--font-sans);
+  font-feature-settings: "ss01", "cv11";
+}
+
+::selection {
+  background: color-mix(in oklab, var(--brand) 22%, transparent);
+}
+
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: 3px;
 }
 
 .tnum {
-  font-variant-numeric: tabular-nums;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+/* Display numerals and headings */
+.display {
+  font-family: var(--font-serif);
+  font-optical-sizing: auto;
+  font-variant-numeric: lining-nums tabular-nums;
+  letter-spacing: -0.01em;
 }
 
 /* Trust lens: when on, numbers not backed by a VERIFIED fact fade. */
 [data-trust-lens="on"] [data-evidence]:not([data-evidence="VERIFIED"]) {
-  opacity: 0.28;
+  opacity: 0.25;
+  filter: grayscale(1);
 }
 
 @media print {
   .no-print {
     display: none !important;
   }
-  body {
-    background: #fff;
+  :root {
+    --canvas: #fff;
+    --surface: #fff;
   }
 }

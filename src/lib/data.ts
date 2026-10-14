@@ -1,6 +1,6 @@
 import { cache } from "react";
 import { prisma } from "./db";
-import type { FactT, InstitutionT, Profile } from "./types";
+import type { DealStage, FactT, InstitutionT, NoteT, Profile } from "./types";
 
 const iso = (d: Date) => d.toISOString();
 
@@ -39,6 +39,8 @@ const toInstT = (i: InstRow): InstitutionT => ({
   overallRiskNote: i.overallRiskNote,
   opportunity: i.opportunity,
   opportunityNote: i.opportunityNote,
+  stage: i.stage as DealStage,
+  stageUpdatedAt: iso(i.stageUpdatedAt),
 });
 
 /** Everything known about one institution, serialisable for client components. Null if not found. */
@@ -51,6 +53,7 @@ export const getProfile = cache(async (id: string): Promise<Profile | null> => {
       promoters: { include: { entities: true } },
       legal: { orderBy: { year: "desc" } },
       recruiters: { orderBy: { name: "asc" } },
+      notes: { orderBy: { createdAt: "desc" } },
     },
   });
   if (!i) return null;
@@ -104,6 +107,12 @@ export const getProfile = cache(async (id: string): Promise<Profile | null> => {
       sourceName: r.sourceName,
       asOfDate: iso(r.asOfDate),
       status: r.status,
+    })),
+    notes: i.notes.map((n) => ({
+      id: n.id,
+      kind: n.kind as NoteT["kind"],
+      body: n.body,
+      createdAt: iso(n.createdAt),
     })),
   };
 });

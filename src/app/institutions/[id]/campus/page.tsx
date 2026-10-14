@@ -2,17 +2,78 @@ import type { ReactNode } from "react";
 import type { FactT } from "@/lib/types";
 import { notFound } from "next/navigation";
 import { getProfile } from "@/lib/data";
-import { latest, periods, pick, series } from "@/lib/facts";
-import { Card, Label, PageHeader, Td, Th } from "@/components/ui";
-import { CoverageMeter, Derived, Num } from "@/components/evidence/Evidence";
+import { coverage, latest, periods, pick, series, trend } from "@/lib/facts";
+import { Empty, Kicker, Section, Stat, StatRow, Td, Th } from "@/components/ui";
+import { Derived, Num } from "@/components/evidence/Evidence";
 import { TrendLine } from "@/components/charts/TrendLine";
 
-function Stat({ label, period, children }: { label: string; period?: string; children: ReactNode }) {
+const defined = (xs: (FactT | undefined)[]) => xs.filter((f): f is FactT => f !== undefined);
+
+const ACADEMIC: { label: string; key: string }[] = [
+  { label: "Average attendance", key: "attendance.avg" },
+  { label: "Pass percentage", key: "pass.rate" },
+  { label: "Students with backlogs", key: "backlog.rate" },
+  { label: "Dropout rate", key: "dropout.rate" },
+  { label: "Graduation rate", key: "graduation.rate" },
+  { label: "Progression to higher study", key: "progression.rate" },
+];
+
+const INFRA: { label: string; key: string }[] = [
+  { label: "Land", key: "land.acres" },
+  { label: "Built-up area", key: "builtup.sqft" },
+  { label: "Classrooms", key: "classrooms.count" },
+  { label: "Laboratories", key: "labs.count" },
+  { label: "Library volumes", key: "library.books" },
+  { label: "Buses", key: "transport.buses" },
+  { label: "Sports facilities", key: "sports.facilities" },
+];
+
+function Meter({ pct }: { pct: number | null }) {
+  if (pct === null) return <div className="mt-4 h-[3px] bg-sunken" aria-hidden />;
   return (
-    <div className="rounded-lg border border-line bg-surface p-3">
-      <Label>{label}</Label>
-      <div className="mt-1 text-lg font-semibold tnum">{children}</div>
-      {period && period !== "current" ? <div className="text-xs text-muted">{period}</div> : null}
+    <div className="mt-4 h-[3px] bg-sunken" aria-hidden>
+      <div className="h-full bg-ink" style={{ width: `${Math.min(100, Math.max(0, pct))}%` }} />
+    </div>
+  );
+}
+
+function Occupancy({
+  title,
+  pct,
+  basis,
+  part,
+  whole,
+  partLabel,
+  wholeLabel,
+}: {
+  title: string;
+  pct: number | null;
+  basis: FactT[];
+  part: FactT | undefined;
+  whole: FactT | undefined;
+  partLabel: string;
+  wholeLabel: string;
+}) {
+  return (
+    <div>
+      <Stat label={title} size="lg">
+        <Derived value={pct} unit="percent" basis={basis} />
+      </Stat>
+      <Meter pct={pct} />
+      <dl className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-[13px]">
+        <div className="flex items-baseline gap-2">
+          <dt className="text-muted">{partLabel}</dt>
+          <dd className="text-ink">
+            <Num fact={part} />
+          </dd>
+        </div>
+        <div className="flex items-baseline gap-2">
+          <dt className="text-muted">{wholeLabel}</dt>
+          <dd className="text-ink">
+            <Num fact={whole} />
+          </dd>
+        </div>
+      </dl>
     </div>
   );
 }
@@ -27,34 +88,14 @@ export default async function CampusPage({ params }: { params: Promise<{ id: str
   // Ratio uses the student count for the same year as the faculty count where one exists.
   const students = (faculty && pick(facts, "students.total", faculty.period)) ?? latest(facts, "students.total");
   const ratio = students?.valueNum != null && faculty?.valueNum ? students.valueNum / faculty.valueNum : null;
+  const ratioBasis = defined([students, faculty]);
 
-  const ay = (key: string) => latest(facts, key);
-  const academic: { label: string; key: string }[] = [
-    { label: "Average attendance", key: "attendance.avg" },
-    { label: "Pass percentage", key: "pass.rate" },
-    { label: "Students with backlogs", key: "backlog.rate" },
-    { label: "Dropout rate", key: "dropout.rate" },
-    { label: "Graduation rate", key: "graduation.rate" },
-    { label: "Progression to higher study", key: "progression.rate" },
-  ];
-
-  const years = [
-    ...new Set(["faculty.total", "pass.rate", "dropout.rate"].flatMap((k) => periods(facts, k))),
-  ]
+  const years = [...new Set(["faculty.total", "pass.rate", "dropout.rate"].flatMap((k) => periods(facts, k)))]
     .sort()
     .slice(-5);
-
   const passSeries = series(facts, "pass.rate").slice(-5);
-
-  const infra: { label: string; key: string }[] = [
-    { label: "Land", key: "land.acres" },
-    { label: "Built-up area", key: "builtup.sqft" },
-    { label: "Classrooms", key: "classrooms.count" },
-    { label: "Laboratories", key: "labs.count" },
-    { label: "Library volumes", key: "library.books" },
-    { label: "Buses", key: "transport.buses" },
-    { label: "Sports facilities", key: "sports.facilities" },
-  ];
+  const pass = latest(facts, "pass.rate");
+  const passDir = trend(passSeries.map((p) => p.value));
 
   const hostelCap = pick(facts, "hostel.capacity");
   const hostelOcc = pick(facts, "hostel.occupancy");
@@ -66,51 +107,111 @@ export default async function CampusPage({ params }: { params: Promise<{ id: str
   const campusUtil =
     capacity?.valueNum && latestStudents?.valueNum != null ? (latestStudents.valueNum / capacity.valueNum) * 100 : null;
 
-  return (
-    <div className="space-y-6">
-      <PageHeader title="Campus Health Dashboard" subtitle="Academic performance and physical infrastructure">
-        <CoverageMeter facts={facts} module="campus" label="Campus evidence coverage" />
-      </PageHeader>
+  const academic = ACADEMIC.map((a) => ({ ...a, fact: latest(facts, a.key) }));
+  const unverified = academic.filter((a) => a.fact && a.fact.status !== "VERIFIED").length;
+  const cov = coverage(facts, "campus");
 
-      <Card title="Academic health">
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
-          <Stat label="Student strength" period={latestStudents?.period}>
+  const clauses: ReactNode[] = [];
+  if (ratio !== null)
+    clauses.push(
+      <>
+        One teacher for every <Derived value={ratio} unit="count" basis={ratioBasis} /> students
+      </>,
+    );
+  if (pass)
+    clauses.push(
+      <>
+        {clauses.length ? "a" : "A"} pass rate{" "}
+        {passDir === "up" ? "rising to" : passDir === "down" ? "falling to" : passDir === "flat" ? "holding at" : "of"}{" "}
+        <Num fact={pass} />
+      </>,
+    );
+  if (hostelPct !== null)
+    clauses.push(
+      <>
+        {clauses.length ? "hostels" : "Hostels"}{" "}
+        <Derived value={hostelPct} unit="percent" basis={defined([hostelOcc, hostelCap])} /> full
+      </>,
+    );
+
+  return (
+    <div className="space-y-14">
+      <header>
+        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+          <Kicker>Campus</Kicker>
+          <span className="tnum text-[12px] text-muted">
+            {cov.verified} of {cov.expected} campus metrics verified
+          </span>
+        </div>
+        <p className="display mt-3 max-w-3xl text-[26px] leading-[1.25] text-ink sm:text-[30px]">
+          {clauses.length ? (
+            <>
+              {clauses.map((c, i) => (
+                <span key={i}>
+                  {i > 0 ? (i === clauses.length - 1 ? " and " : ", ") : null}
+                  {c}
+                </span>
+              ))}
+              {unverified ? (
+                <span className="text-muted">
+
+                  ;{" "}
+                  {unverified === academic.filter((a) => a.fact).length
+                    ? "none of the academic figures is independently verified."
+                    : "some academic figures are not independently verified."}
+                </span>
+              ) : (
+                "."
+              )}
+            </>
+          ) : (
+            "Campus performance is not available from the sources checked."
+          )}
+        </p>
+      </header>
+
+      <Section index="01" title="Academic health" aside={faculty ? `Latest ${faculty.period}` : undefined}>
+        <StatRow>
+          <Stat label="Students" size="lg" sub={latestStudents?.period}>
             <Num fact={latestStudents} />
           </Stat>
-          <Stat label="Faculty strength" period={faculty?.period}>
+          <Stat label="Faculty" size="lg" sub={faculty?.period}>
             <Num fact={faculty} />
           </Stat>
-          <Stat label="Faculty : student ratio" period={faculty?.period}>
-            <Derived value={ratio} unit="ratio" basis={[students, faculty].filter((f): f is FactT => f !== undefined)} />
+          <Stat label="Faculty to students" size="lg" sub={faculty?.period}>
+            <Derived value={ratio} unit="ratio" basis={ratioBasis} />
           </Stat>
-          {academic.map((a) => {
-            const f = ay(a.key);
-            return (
-              <Stat key={a.key} label={a.label} period={f?.period}>
-                <Num fact={f} />
-              </Stat>
-            );
-          })}
-        </div>
-      </Card>
+        </StatRow>
+        <StatRow className="mt-8 border-t border-line pt-6">
+          {academic.map((a) => (
+            <Stat key={a.key} label={a.label} size="sm" sub={a.fact?.period}>
+              <Num fact={a.fact} />
+            </Stat>
+          ))}
+        </StatRow>
+      </Section>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card title="Five-year academic record">
+      <Section
+        index="02"
+        title="Five-year record"
+        aside={years.length ? `${years[0]} to ${years[years.length - 1]}` : undefined}
+      >
+        <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full">
               <thead>
                 <tr>
-                  <Th>Academic year</Th>
-                  <Th>Faculty</Th>
-                  <Th>Pass rate</Th>
-                  <Th>Dropout rate</Th>
+                  <Th>Year</Th>
+                  <Th num>Faculty</Th>
+                  <Th num>Pass rate</Th>
+                  <Th num>Dropout</Th>
                 </tr>
               </thead>
               <tbody>
                 {years.length ? (
                   years.map((y) => (
-                    <tr key={y} className="border-t border-line">
-                      <Td>{y}</Td>
+                    <tr key={y}>
+                      <Td className="font-mono text-[12.5px] text-muted">{y}</Td>
                       <Td num>
                         <Num fact={pick(facts, "faculty.total", y)} />
                       </Td>
@@ -123,10 +224,8 @@ export default async function CampusPage({ params }: { params: Promise<{ id: str
                     </tr>
                   ))
                 ) : (
-                  <tr className="border-t border-line">
-                    <Td>
-                      <span className="text-muted">Not available</span>
-                    </Td>
+                  <tr>
+                    <Td className="text-muted">Not available</Td>
                     <Td num>
                       <Num fact={undefined} />
                     </Td>
@@ -141,85 +240,55 @@ export default async function CampusPage({ params }: { params: Promise<{ id: str
               </tbody>
             </table>
           </div>
-        </Card>
-
-        <Card title="Pass rate trend">
-          {passSeries.some((p) => p.value !== null) ? (
-            <TrendLine
-              unit="percent"
-              points={passSeries.map((p) => ({ label: p.period, value: p.value, status: p.fact?.status }))}
-            />
-          ) : (
-            <p className="text-sm text-muted">Not available</p>
-          )}
-        </Card>
-      </div>
-
-      <Card title="Infrastructure">
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          {infra.map((i) => (
-            <Stat key={i.key} label={i.label}>
-              <Num fact={pick(facts, i.key)} />
-            </Stat>
-          ))}
+          <div>
+            <div className="mb-2 text-[12px] text-muted">Pass rate</div>
+            {passSeries.some((p) => p.value !== null) ? (
+              <TrendLine
+                unit="percent"
+                points={passSeries.map((p) => ({ label: p.period, value: p.value, status: p.fact?.status }))}
+              />
+            ) : (
+              <Empty>Not available</Empty>
+            )}
+          </div>
         </div>
-      </Card>
+      </Section>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card title="Hostel capacity vs occupancy">
-          <div className="grid grid-cols-3 gap-3">
-            <Stat label="Capacity">
-              <Num fact={hostelCap} />
-            </Stat>
-            <Stat label="Occupied">
-              <Num fact={hostelOcc} />
-            </Stat>
-            <Stat label="Occupancy share">
-              <Derived
-                value={hostelPct}
-                unit="percent"
-                basis={[hostelOcc, hostelCap].filter((f): f is FactT => f !== undefined)}
-              />
-            </Stat>
-          </div>
-          {hostelPct !== null ? (
-            <div className="mt-4">
-              <div
-                className="h-3 w-full overflow-hidden rounded-full bg-canvas ring-1 ring-line"
-                role="img"
-                aria-label="Hostel beds occupied as a share of capacity"
-              >
-                <div className="h-full bg-brand" style={{ width: `${Math.min(100, Math.max(0, hostelPct))}%` }} />
-              </div>
-              <div className="mt-1 flex justify-between text-xs text-muted">
-                <span>Occupied</span>
-                <span>Capacity</span>
-              </div>
+      <Section index="03" title="Occupancy">
+        <div className="grid gap-12 md:grid-cols-2">
+          <Occupancy
+            title="Hostel beds occupied"
+            pct={hostelPct}
+            basis={defined([hostelOcc, hostelCap])}
+            part={hostelOcc}
+            whole={hostelCap}
+            partLabel="Occupied"
+            wholeLabel="Capacity"
+          />
+          <Occupancy
+            title="Sanctioned capacity in use"
+            pct={campusUtil}
+            basis={defined([latestStudents, capacity])}
+            part={latestStudents}
+            whole={capacity}
+            partLabel="Students"
+            wholeLabel="Sanctioned"
+          />
+        </div>
+      </Section>
+
+      <Section index="04" title="Infrastructure">
+        <dl className="grid gap-x-12 sm:grid-cols-2">
+          {INFRA.map((i) => (
+            <div key={i.key} className="flex items-baseline justify-between gap-4 border-b border-line py-2.5">
+              <dt className="text-[13.5px] text-muted">{i.label}</dt>
+              <dd className="text-right text-[14px] text-ink [&_[data-pop]]:left-auto [&_[data-pop]]:right-0">
+                <Num fact={pick(facts, i.key)} />
+              </dd>
             </div>
-          ) : (
-            <p className="mt-4 text-sm text-muted">Occupancy bar not available: capacity or occupancy is missing.</p>
-          )}
-        </Card>
-
-        <Card title="Campus utilisation">
-          <div className="grid grid-cols-3 gap-3">
-            <Stat label="Students" period={latestStudents?.period}>
-              <Num fact={latestStudents} />
-            </Stat>
-            <Stat label="Sanctioned capacity">
-              <Num fact={capacity} />
-            </Stat>
-            <Stat label="Utilisation">
-              <Derived
-                value={campusUtil}
-                unit="percent"
-                basis={[latestStudents, capacity].filter((f): f is FactT => f !== undefined)}
-              />
-            </Stat>
-          </div>
-          <p className="mt-3 text-xs text-muted">Utilisation = total students ÷ total sanctioned capacity.</p>
-        </Card>
-      </div>
+          ))}
+        </dl>
+      </Section>
     </div>
   );
 }

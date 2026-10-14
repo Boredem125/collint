@@ -56,12 +56,15 @@ const mkProfile = (facts: FactT[], legal: LegalRecordT[] = []): Profile => ({
     overallRiskNote: null,
     opportunity: null,
     opportunityNote: null,
+    stage: "SCREENING",
+    stageUpdatedAt: "2026-01-01T00:00:00.000Z",
   },
   facts,
   programmes: [],
   promoters: [{ id: "pr1", name: "Sample Trust", kind: "TRUST", role: "Sponsor", established: null, sourceName: "s", sourceUrl: null, asOfDate: "2026-01-01T00:00:00.000Z", entities: [] }],
   legal,
   recruiters: [],
+  notes: [],
 });
 
 const run = (facts: FactT[], legal: LegalRecordT[] = []) => deriveFlags(mkProfile(facts, legal), TODAY);

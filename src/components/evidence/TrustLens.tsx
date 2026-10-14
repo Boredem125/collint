@@ -46,14 +46,14 @@ export function TrustLensToggle() {
       aria-checked={on}
       onClick={toggle}
       title="Fade every number that is not backed by a verified source"
-      className="no-print inline-flex items-center gap-2 rounded-full border border-line bg-surface px-2.5 py-1 text-xs font-medium text-ink hover:border-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+      className={`no-print inline-flex h-8 shrink-0 items-center gap-2 whitespace-nowrap rounded-md px-2 text-[12.5px] transition-colors hover:bg-sunken ${on ? "text-ink" : "text-muted hover:text-ink"}`}
     >
       <span
         aria-hidden
-        className={`relative inline-block h-4 w-7 rounded-full transition-colors ${on ? "bg-verified" : "bg-unavailable"}`}
+        className={`relative inline-block h-[14px] w-[24px] rounded-full border bg-sunken transition-colors ${on ? "border-ink" : "border-line-strong"}`}
       >
         <span
-          className={`absolute top-0.5 h-3 w-3 rounded-full bg-white transition-all ${on ? "left-3.5" : "left-0.5"}`}
+          className={`absolute top-1/2 h-[8px] w-[8px] -translate-y-1/2 rounded-full transition-all ${on ? "left-[12px] bg-ink" : "left-[2px] bg-faint"}`}
         />
       </span>
       Verified only

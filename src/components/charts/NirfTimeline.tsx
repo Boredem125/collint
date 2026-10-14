@@ -14,20 +14,17 @@ export function NirfTimeline({
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full border-collapse text-sm" aria-label="NIRF rank by category and year">
+      <table className="w-full border-collapse" aria-label="NIRF rank by category and year">
         <thead>
           <tr>
-            <th
-              scope="col"
-              className="border-b border-line px-3 py-2 text-left text-[11px] font-medium uppercase tracking-wide text-muted"
-            >
+            <th scope="col" className="border-b border-line-strong py-2 pr-3 text-left text-[12px] font-normal text-muted">
               Category
             </th>
             {years.map((y) => (
               <th
                 key={y}
                 scope="col"
-                className="tnum border-b border-line px-3 py-2 text-center text-[11px] font-medium uppercase tracking-wide text-muted"
+                className="tnum border-b border-line-strong px-3 py-2 text-right font-mono text-[11px] font-normal text-faint last:pr-0"
               >
                 {y}
               </th>
@@ -37,7 +34,10 @@ export function NirfTimeline({
         <tbody>
           {rows.map((r) => (
             <tr key={r.category}>
-              <th scope="row" className="whitespace-nowrap border-b border-line px-3 py-2 text-left font-medium text-ink">
+              <th
+                scope="row"
+                className="whitespace-nowrap border-b border-line py-2.5 pr-3 text-left text-[13.5px] font-normal text-ink"
+              >
                 {(metric(r.category)?.label ?? r.category).replace(/^NIRF\s+/, "")}
               </th>
               {years.map((y, yi) => {
@@ -45,15 +45,17 @@ export function NirfTimeline({
                 // Popovers in the right half of the table open leftwards.
                 const flip = yi >= years.length / 2 ? "[&_[data-pop]]:left-auto [&_[data-pop]]:right-0" : "";
                 return (
-                  <td key={y} className={`border-b border-line px-3 py-2 text-center ${flip}`}>
+                  <td key={y} className={`border-b border-line px-3 py-2.5 text-right last:pr-0 ${flip}`}>
                     {!fact ? (
-                      <span className="text-xs text-muted">Not ranked</span>
+                      <span className="text-[12px] text-faint">Not ranked</span>
                     ) : fact.status === "UNAVAILABLE" || (fact.valueNum === null && fact.valueText === null) ? (
-                      <Num fact={fact} className="text-xs" />
+                      <Num fact={fact} className="text-[12px]" />
                     ) : (
-                      <span className="inline-flex rounded-full border border-brand/25 bg-brand/5 px-2 py-0.5">
-                        <Num fact={fact} unit={fact.valueNum !== null ? "rank" : "text"} className="font-semibold text-brand" />
-                      </span>
+                      <Num
+                        fact={fact}
+                        unit={fact.valueNum !== null ? "rank" : "text"}
+                        className="display text-[18px] leading-none text-ink"
+                      />
                     )}
                   </td>
                 );

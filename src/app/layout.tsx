@@ -1,47 +1,55 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Geist, Geist_Mono, Newsreader } from "next/font/google";
 import "./globals.css";
 import { TrustLensProvider, TrustLensToggle } from "@/components/evidence/TrustLens";
 import CommandSearch from "@/components/CommandSearch";
+import ThemeToggle from "@/components/ThemeToggle";
+import NavLink from "@/components/NavLink";
+
+const sans = Geist({ subsets: ["latin"], variable: "--font-geist" });
+const mono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono" });
+const serif = Newsreader({ subsets: ["latin"], variable: "--font-newsreader", style: ["normal", "italic"] });
 
 export const metadata: Metadata = {
-  title: "Institution Intelligence Platform",
-  description: "One Search. One Profile. One Executive View.",
+  title: { default: "Collint", template: "%s · Collint" },
+  description: "College intelligence for partnership due diligence. Every number carries its source.",
 };
 
-const NAV = [
-  { href: "/", label: "Portfolio" },
-  { href: "/compare", label: "Compare" },
-  { href: "/import", label: "Import" },
-];
+// Sets the stored theme before first paint to avoid a flash.
+const themeScript = `try{var t=localStorage.getItem("iip.theme");if(t)document.documentElement.dataset.theme=t;else if(matchMedia("(prefers-color-scheme: dark)").matches)document.documentElement.dataset.theme="dark"}catch(e){}`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning className={`${sans.variable} ${mono.variable} ${serif.variable}`}>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body className="min-h-screen antialiased">
         <TrustLensProvider>
-          <header className="no-print sticky top-0 z-40 border-b border-line bg-surface">
-            <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-2.5">
-              <Link href="/" className="flex items-baseline gap-3">
-                <span className="text-lg font-semibold tracking-tight text-brand">IIP</span>
-                <span className="hidden text-xs text-muted lg:inline">
-                  One Search. One Profile. One Executive View.
+          <header className="no-print sticky top-0 z-40 border-b border-line bg-canvas/85 backdrop-blur">
+            <div className="mx-auto flex h-14 max-w-[1320px] items-center gap-3 px-5">
+              <Link href="/" className="flex items-baseline gap-2 pr-2">
+                <span className="display text-[23px] font-semibold italic leading-none tracking-tight text-ink">
+                  Collint
+                </span>
+                <span className="hidden font-mono text-[10px] uppercase tracking-[0.12em] text-faint md:inline">
+                  diligence
                 </span>
               </Link>
-              <div className="min-w-56 flex-1">
+              <nav className="hidden items-center gap-0.5 sm:flex">
+                <NavLink href="/">Pipeline</NavLink>
+                <NavLink href="/compare">Compare</NavLink>
+                <NavLink href="/import">Import</NavLink>
+              </nav>
+              <div className="ml-auto w-full max-w-sm">
                 <CommandSearch />
               </div>
-              <nav className="flex items-center gap-4 text-sm">
-                {NAV.map((n) => (
-                  <Link key={n.href} href={n.href} className="text-muted hover:text-ink">
-                    {n.label}
-                  </Link>
-                ))}
-              </nav>
               <TrustLensToggle />
+              <ThemeToggle />
             </div>
           </header>
-          <main className="mx-auto max-w-7xl px-4 py-6">{children}</main>
+          <main className="mx-auto max-w-[1320px] px-5 pb-24 pt-8">{children}</main>
         </TrustLensProvider>
       </body>
     </html>

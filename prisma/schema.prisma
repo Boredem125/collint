@@ -53,6 +53,9 @@ model Institution {
   // Manual judgement: HIGH | MEDIUM | LOW
   opportunity     String?
   opportunityNote String?
+  // Deal pipeline: SCREENING | DILIGENCE | NEGOTIATION | PARTNERED | PASSED
+  stage           String   @default("SCREENING")
+  stageUpdatedAt  DateTime @default(now())
   createdAt       DateTime @default(now())
   importBatchId   String?
   importBatch     ImportBatch? @relation(fields: [importBatchId], references: [id], onDelete: Cascade)
@@ -62,6 +65,18 @@ model Institution {
   promoters  Promoter[]
   legal      LegalRecord[]
   recruiters Recruiter[]
+  notes      Note[]
+}
+
+// Analyst notes and stage changes, newest first on the profile.
+model Note {
+  id            String      @id @default(cuid())
+  institutionId String
+  institution   Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  // NOTE | STAGE_CHANGE | DECISION
+  kind          String      @default("NOTE")
+  body          String
+  createdAt     DateTime    @default(now())
 }
 
 model Programme {

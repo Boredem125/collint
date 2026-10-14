@@ -1,24 +1,25 @@
 import type { ReactNode } from "react";
 import { notFound } from "next/navigation";
 import { getProfile } from "@/lib/data";
-import { cagr, latest, periods, pick, series } from "@/lib/facts";
+import { THRESHOLDS } from "@/lib/risk";
+import { cagr, coverage, latest, periods, pick, series } from "@/lib/facts";
 import type { FactT } from "@/lib/types";
-import { Card, Empty, Label, PageHeader, Td, Th } from "@/components/ui";
-import { CoverageMeter, Derived, Num } from "@/components/evidence/Evidence";
+import { Empty, Kicker, Section, Stat, StatRow, Td, Th } from "@/components/ui";
+import { Derived, Num } from "@/components/evidence/Evidence";
 import { SeatMap } from "@/components/charts/SeatMap";
 import { WhatIf } from "@/components/WhatIf";
 
 const defined = (xs: (FactT | undefined)[]) => xs.filter((f): f is FactT => f !== undefined);
 
-function Stat({ label, period, children }: { label: string; period?: string; children: ReactNode }) {
-  return (
-    <div className="rounded-lg border border-line bg-surface p-3">
-      <Label>{label}</Label>
-      <div className="mt-1 text-lg font-semibold tnum">{children}</div>
-      {period ? <div className="text-xs text-muted">{period}</div> : null}
-    </div>
-  );
-}
+const SECONDARY: { label: string; key: string }[] = [
+  { label: "Collection efficiency", key: "fee.collectionEfficiency" },
+  { label: "Outstanding fees", key: "fee.outstanding" },
+  { label: "Scholarship share", key: "scholarship.rate" },
+  { label: "Discount share", key: "discount.rate" },
+  { label: "Refunds", key: "refunds.total" },
+];
+
+const LEVEL: Record<string, string> = { HIGH: "High", MEDIUM: "Medium", LOW: "Low" };
 
 export default async function CommercialPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -45,14 +46,6 @@ export default async function CommercialPage({ params }: { params: Promise<{ id:
     first && last && first !== last
       ? cagr(first.value!, last.value!, Number(last.period.slice(0, 4)) - Number(first.period.slice(0, 4)))
       : null;
-
-  const simple: { label: string; key: string }[] = [
-    { label: "Collection efficiency", key: "fee.collectionEfficiency" },
-    { label: "Outstanding fees", key: "fee.outstanding" },
-    { label: "Scholarship share", key: "scholarship.rate" },
-    { label: "Discount share", key: "discount.rate" },
-    { label: "Refunds", key: "refunds.total" },
-  ];
 
   const feeYear = programmes
     .flatMap((p) => periods(facts, "fee.annual", p.id))
@@ -83,59 +76,187 @@ export default async function CommercialPage({ params }: { params: Promise<{ id:
   const wiIntake = intakeYear ? pick(facts, "intake.approved", intakeYear) : undefined;
   const wiAdm = intakeYear ? pick(facts, "admissions.total", intakeYear) : undefined;
 
-  return (
-    <div className="space-y-6">
-      <PageHeader title="Commercial" subtitle="Revenue potential and partnership opportunity">
-        <CoverageMeter facts={facts} module="commercial" label="Commercial evidence coverage" />
-      </PageHeader>
+  const collection = latest(facts, "fee.collectionEfficiency");
+  const cov = coverage(facts, "commercial");
 
-      <Card title="Revenue potential">
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
-          <Stat label="Total students" period={students?.period}>
+  const clauses: ReactNode[] = [];
+  if (revenue)
+    clauses.push(
+      <>
+        Fee revenue of <Num fact={revenue} /> in {revenue.period}
+      </>,
+    );
+  if (available !== null && available > 0)
+    clauses.push(
+      <>
+        {clauses.length ? "with" : "There are"}{" "}
+        <Derived value={available} unit="count" basis={defined([capacity, students])} /> sanctioned seats unfilled
+      </>,
+    );
+  else if (occupancy !== null)
+    clauses.push(
+      <>
+        {clauses.length ? "with" : "With"} sanctioned capacity{" "}
+        <Derived value={occupancy} unit="percent" basis={defined([students, capacity])} /> used
+      </>,
+    );
+  if (collection?.valueNum != null && collection.valueNum < THRESHOLDS.collectionEfficiencyMin)
+    clauses.push(
+      <>
+        {clauses.length ? "but only" : "Only"} <Num fact={collection} /> of billed fees collected
+      </>,
+    );
+
+  return (
+    <div className="space-y-14">
+      <header>
+        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+          <Kicker>Commercial</Kicker>
+          <span className="tnum text-[12px] text-muted">
+            {cov.verified} of {cov.expected} commercial metrics verified
+          </span>
+        </div>
+        <p className="display mt-3 max-w-3xl text-[26px] leading-[1.25] text-ink sm:text-[30px]">
+          {clauses.length ? (
+            <>
+              {clauses.map((c, i) => (
+                <span key={i}>
+                  {i > 0 ? ", " : null}
+                  {c}
+                </span>
+              ))}
+              .
+            </>
+          ) : (
+            "Commercial figures are not available from the sources checked."
+          )}
+        </p>
+      </header>
+
+      <Section index="01" title="Revenue base">
+        <StatRow>
+          <Stat label="Students" size="lg" sub={students?.period}>
             <Num fact={students} />
           </Stat>
-          <Stat label="New admissions" period={admissions?.period}>
+          <Stat label="New admissions" size="lg" sub={admissions?.period}>
             <Num fact={admissions} />
           </Stat>
-          <Stat label="Average fee" period={avgFee?.period}>
+          <Stat label="Average fee" size="lg" sub={avgFee?.period}>
             <Num fact={avgFee} />
           </Stat>
-          {simple.map((s) => {
+        </StatRow>
+        <StatRow className="mt-8 border-t border-line pt-6">
+          <Stat label="Revenue per student" size="sm" sub={revenue?.period}>
+            <Derived value={revPerStudent} unit="inr" basis={defined([revenue, revStudents])} />
+          </Stat>
+          <Stat
+            label="Admissions CAGR"
+            size="sm"
+            sub={admCagr !== null && first && last ? `${first.period} to ${last.period}` : undefined}
+          >
+            <Derived value={admCagr} unit="percent" basis={admCagr !== null ? defined([first?.fact, last?.fact]) : []} />
+          </Stat>
+          {SECONDARY.map((s) => {
             const f = latest(facts, s.key);
             return (
-              <Stat key={s.key} label={s.label} period={f?.period}>
+              <Stat key={s.key} label={s.label} size="sm" sub={f?.period}>
                 <Num fact={f} />
               </Stat>
             );
           })}
-          <Stat label="Revenue per student" period={revenue?.period}>
-            <Derived value={revPerStudent} unit="inr" basis={defined([revenue, revStudents])} />
-          </Stat>
-          <Stat
-            label="Admission CAGR"
-            period={admCagr !== null && first && last ? `${first.period} to ${last.period}` : undefined}
-          >
-            <Derived value={admCagr} unit="percent" basis={admCagr !== null ? defined([first?.fact, last?.fact]) : []} />
-          </Stat>
-        </div>
-      </Card>
+        </StatRow>
+      </Section>
 
-      <Card title={feeYear ? `Course-wise annual fee, ${feeYear}` : "Course-wise annual fee"}>
+      <Section index="02" title="Partnership opportunity">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr>
+                <Th>Measure</Th>
+                <Th num>Value</Th>
+                <Th className="hidden sm:table-cell">Basis</Th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <Td>Addressable students</Td>
+                <Td num>
+                  <Num fact={students} />
+                </Td>
+                <Td className="hidden text-muted sm:table-cell">Total students{students ? `, ${students.period}` : ""}</Td>
+              </tr>
+              <tr>
+                <Td>Annual new admissions</Td>
+                <Td num>
+                  <Num fact={admissions} />
+                </Td>
+                <Td className="hidden text-muted sm:table-cell">Admissions{admissions ? `, ${admissions.period}` : ""}</Td>
+              </tr>
+              <tr>
+                <Td>Average fee</Td>
+                <Td num>
+                  <Num fact={avgFee} />
+                </Td>
+                <Td className="hidden text-muted sm:table-cell">Average annual fee{avgFee ? `, ${avgFee.period}` : ""}</Td>
+              </tr>
+              <tr>
+                <Td className="font-medium">Potential gross revenue</Td>
+                <Td num className="font-medium">
+                  <Derived value={potential} unit="inr" basis={defined([admissions, avgFee])} />
+                </Td>
+                <Td className="hidden font-mono text-[12px] text-muted sm:table-cell">admissions × average fee</Td>
+              </tr>
+              <tr>
+                <Td>Current occupancy</Td>
+                <Td num>
+                  <Derived value={occupancy} unit="percent" basis={defined([students, capacity])} />
+                </Td>
+                <Td className="hidden font-mono text-[12px] text-muted sm:table-cell">students ÷ sanctioned capacity</Td>
+              </tr>
+              <tr>
+                <Td>Capacity available</Td>
+                <Td num>
+                  <Derived value={available} unit="count" basis={defined([capacity, students])} />
+                </Td>
+                <Td className="hidden font-mono text-[12px] text-muted sm:table-cell">sanctioned capacity − students</Td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </Section>
+
+      <Section index="03" title="Seat headroom by programme" aside={seatYear}>
+        {seatRows.length ? (
+          <SeatMap rows={seatRows} />
+        ) : (
+          <Empty>Not available: programme-wise intake and admissions are missing</Empty>
+        )}
+      </Section>
+
+      <Section index="04" title="What if more seats filled">
+        <WhatIf
+          intake={wiIntake?.valueNum ?? null}
+          currentAdmissions={wiAdm?.valueNum ?? null}
+          averageFee={avgFee?.valueNum ?? null}
+        />
+      </Section>
+
+      <Section index="05" title="Annual fee by programme" aside={feeYear}>
         {programmes.length ? (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full">
               <thead>
                 <tr>
                   <Th>Programme</Th>
                   <Th>Level</Th>
-                  <Th>Annual fee</Th>
+                  <Th num>Annual fee</Th>
                 </tr>
               </thead>
               <tbody>
                 {programmes.map((p) => (
-                  <tr key={p.id} className="border-t border-line">
+                  <tr key={p.id}>
                     <Td>{p.name}</Td>
-                    <Td>{p.level}</Td>
+                    <Td className="text-muted">{p.level}</Td>
                     <Td num>
                       <Num fact={feeYear ? pick(facts, "fee.annual", feeYear, p.id) : undefined} />
                     </Td>
@@ -145,92 +266,24 @@ export default async function CommercialPage({ params }: { params: Promise<{ id:
             </table>
           </div>
         ) : (
-          <Empty>Not available — no programmes recorded</Empty>
+          <Empty>Not available: no programmes recorded</Empty>
         )}
-      </Card>
+      </Section>
 
-      <Card title="Partnership opportunity">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr>
-                <Th>Measure</Th>
-                <Th>Value</Th>
-                <Th>Basis</Th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr className="border-t border-line">
-                <Td>Addressable Students</Td>
-                <Td num>
-                  <Num fact={students} />
-                </Td>
-                <Td>Total students{students ? `, ${students.period}` : ""}</Td>
-              </tr>
-              <tr className="border-t border-line">
-                <Td>Annual New Admissions</Td>
-                <Td num>
-                  <Num fact={admissions} />
-                </Td>
-                <Td>Admissions{admissions ? `, ${admissions.period}` : ""}</Td>
-              </tr>
-              <tr className="border-t border-line">
-                <Td>Average Fee</Td>
-                <Td num>
-                  <Num fact={avgFee} />
-                </Td>
-                <Td>Average annual fee{avgFee ? `, ${avgFee.period}` : ""}</Td>
-              </tr>
-              <tr className="border-t border-line">
-                <Td>Potential Gross Revenue</Td>
-                <Td num>
-                  <Derived value={potential} unit="inr" basis={defined([admissions, avgFee])} />
-                </Td>
-                <Td>Annual new admissions × average fee</Td>
-              </tr>
-              <tr className="border-t border-line">
-                <Td>Current Occupancy</Td>
-                <Td num>
-                  <Derived value={occupancy} unit="percent" basis={defined([students, capacity])} />
-                </Td>
-                <Td>Total students ÷ sanctioned capacity</Td>
-              </tr>
-              <tr className="border-t border-line">
-                <Td>Capacity Available</Td>
-                <Td num>
-                  <Derived value={available} unit="count" basis={defined([capacity, students])} />
-                </Td>
-                <Td>Sanctioned capacity − total students</Td>
-              </tr>
-            </tbody>
-          </table>
+      <Section index="06" title="Opportunity assessment" aside="Team judgement, not computed">
+        <div className="grid gap-6 sm:grid-cols-[minmax(0,12rem)_minmax(0,1fr)] sm:items-baseline">
+          <div className="display text-[44px] leading-none text-ink">
+            {inst.opportunity ? (
+              (LEVEL[inst.opportunity] ?? inst.opportunity)
+            ) : (
+              <span className="text-[20px] text-muted">Not available</span>
+            )}
+          </div>
+          <p className="max-w-xl text-[14.5px] leading-relaxed text-muted">
+            {inst.opportunityNote ?? "No assessment note recorded."}
+          </p>
         </div>
-      </Card>
-
-      <Card title={seatYear ? `Seat headroom by programme, ${seatYear}` : "Seat headroom by programme"}>
-        {seatRows.length ? (
-          <SeatMap rows={seatRows} />
-        ) : (
-          <Empty>Not available — programme-wise intake and admissions are missing</Empty>
-        )}
-      </Card>
-
-      <WhatIf
-        intake={wiIntake?.valueNum ?? null}
-        currentAdmissions={wiAdm?.valueNum ?? null}
-        averageFee={avgFee?.valueNum ?? null}
-      />
-
-      <Card title="Opportunity assessment">
-        <Label>Manual assessment against defined business criteria</Label>
-        <div className="mt-1 text-lg font-semibold">
-          {inst.opportunity ?? <span className="font-normal text-muted">Not available</span>}
-        </div>
-        <p className="mt-1 text-sm text-muted">{inst.opportunityNote ?? "No assessment note recorded."}</p>
-        <p className="mt-3 text-xs text-muted">
-          Entered by the diligence team. It is not computed from the figures on this page.
-        </p>
-      </Card>
+      </Section>
     </div>
   );
 }

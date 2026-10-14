@@ -52,6 +52,17 @@ export interface InstitutionT {
   overallRiskNote: string | null;
   opportunity: string | null;
   opportunityNote: string | null;
+  stage: DealStage;
+  stageUpdatedAt: string;
+}
+
+export type DealStage = "SCREENING" | "DILIGENCE" | "NEGOTIATION" | "PARTNERED" | "PASSED";
+
+export interface NoteT {
+  id: string;
+  kind: "NOTE" | "STAGE_CHANGE" | "DECISION";
+  body: string;
+  createdAt: string;
 }
 
 export interface ProgrammeT {
@@ -115,6 +126,7 @@ export interface Profile {
   promoters: PromoterT[];
   legal: LegalRecordT[];
   recruiters: RecruiterT[];
+  notes: NoteT[];
 }
 
 export type FlagBand = "CRITICAL" | "ATTENTION" | "VERIFIED";

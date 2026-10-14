@@ -863,9 +863,66 @@ const CONFIGS: Cfg[] = [
   },
 ];
 
+type NoteKind = "NOTE" | "STAGE_CHANGE" | "DECISION";
+
+// Deal pipeline position and analyst notes per sample. Dates are fixed so reseeding is deterministic.
+const PIPELINE: Record<string, { stage: string; since: string; notes: [date: string, kind: NoteKind, body: string][] }> = {
+  "sample-healthy": {
+    stage: "NEGOTIATION",
+    since: "2026-09-24",
+    notes: [
+      ["2026-07-16", "NOTE", "First call with the society secretary. Open to a programme partnership for the CSE and MBA streams; asked for five years of portal admission counts, which they shared the same week."],
+      ["2026-08-11", "STAGE_CHANGE", "Moved from Screening to Diligence. Portal counts match the college's claims within 2% every year."],
+      ["2026-09-24", "STAGE_CHANGE", "Moved from Diligence to Negotiation. Approvals, NAAC and placements all verified; no legal records in the sources checked."],
+      ["2026-09-24", "DECISION", "Proceed to term sheet on a revenue-share model for CSE and MBA. Headroom is limited at ~89% utilisation, so price on quality of intake rather than seat growth."],
+    ],
+  },
+  "sample-inflated": {
+    stage: "DILIGENCE",
+    since: "2026-08-02",
+    notes: [
+      ["2026-08-02", "STAGE_CHANGE", "Moved from Screening to Diligence. Catchment is strong and a third of intake is unfilled, but the claimed numbers need checking first."],
+      ["2026-08-29", "NOTE", "University portal shows materially fewer admissions than the college's 2025-26 claim. Asked the registrar for the programme-wise enrolment list; promised within two weeks."],
+      ["2026-09-30", "NOTE", "Placement brochure rate is well above the NIRF submission. Requested offer-letter samples for the 2025 batch; management reluctant to share before an NDA."],
+    ],
+  },
+  "sample-declining": {
+    stage: "SCREENING",
+    since: "2026-07-21",
+    notes: [
+      ["2026-07-21", "STAGE_CHANGE", "Moved from Diligence to Screening. Five years of falling admissions and a lapsed NAAC cycle; parked until the trust shares a turnaround plan."],
+      ["2026-09-08", "NOTE", "Trust says the NAAC renewal SSR will be filed by December. No document seen yet. Fee collection is still below 80% on the internal review."],
+    ],
+  },
+  "sample-promoter": {
+    stage: "DILIGENCE",
+    since: "2026-09-03",
+    notes: [
+      ["2026-09-03", "STAGE_CHANGE", "Moved from Screening to Diligence. Campus metrics verified and stable."],
+      ["2026-09-17", "NOTE", "External counsel engaged to review the AICTE show-cause notice and the land title suit. Neither is a finding against the trust; both are pending."],
+      ["2026-10-06", "DECISION", "Hold at Diligence until counsel's written opinion on the AICTE notice is in. No commercial terms to be discussed before then."],
+    ],
+  },
+};
+
 async function seedOne(c: Cfg) {
   const id = c.inst.id;
-  await prisma.institution.create({ data: c.inst });
+  const pipe = PIPELINE[id];
+  await prisma.institution.create({
+    data: pipe ? { ...c.inst, stage: pipe.stage, stageUpdatedAt: d(pipe.since) } : c.inst,
+  });
+  if (pipe) {
+    await prisma.note.createMany({
+      data: pipe.notes.map(([date, kind, body], i) => ({
+        id: `${id}-n${i + 1}`,
+        institutionId: id,
+        kind,
+        body,
+        // Offset same-day notes so the timeline order is stable
+        createdAt: new Date(d(date).getTime() + (9 * 60 + i) * 60_000),
+      })),
+    });
+  }
 
   await prisma.programme.createMany({
     data: c.programmes.map((p, i) => ({
@@ -945,7 +1002,7 @@ async function main() {
   });
   for (const c of CONFIGS) {
     const n = await seedOne(c);
-    console.log(`${c.inst.id}: ${n} facts, ${c.programmes.length} programmes, ${c.recruiters.length} recruiters, ${c.legal.length} legal records`);
+    console.log(`${c.inst.id}: ${n} facts, ${PIPELINE[c.inst.id]?.notes.length ?? 0} notes, ${c.programmes.length} programmes, ${c.recruiters.length} recruiters, ${c.legal.length} legal records`);
   }
 }
 

@@ -1,4 +1,4 @@
-import type { SourceType, FactStatus, LegalStage } from "./types";
+import type { SourceType, FactStatus, LegalStage, DealStage } from "./types";
 
 export type ModuleKey = "admissions" | "placements" | "accreditation" | "campus" | "commercial";
 
@@ -148,4 +148,12 @@ export const NIRF_CATEGORIES = [
   "nirf.engineering",
   "nirf.management",
   "nirf.pharmacy",
+];
+
+export const DEAL_STAGES: { key: DealStage; label: string }[] = [
+  { key: "SCREENING", label: "Screening" },
+  { key: "DILIGENCE", label: "Diligence" },
+  { key: "NEGOTIATION", label: "Negotiation" },
+  { key: "PARTNERED", label: "Partnered" },
+  { key: "PASSED", label: "Passed" },
 ];
